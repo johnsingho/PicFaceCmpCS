@@ -15,11 +15,19 @@ namespace CameraApp
     {
         private FaceDetect faceDetect=new FaceDetect();
 
+        delegate void SetInfoTextCallback(string text);
+
+
         public MainWin()
         {
             InitializeComponent();
             LoadConfigInfo();
             InitVars();
+            InitEnv();
+        }
+        private void InitEnv()
+        {
+            faceDetect.InitEnv();
         }
 
         private void OnMouseDown(object sender, MouseEventArgs e)
@@ -36,13 +44,36 @@ namespace CameraApp
 
         private bool LoadConfigInfo()
         {
+            faceDetect.BindForm(this);
             return faceDetect.LoadConfigInfo();
         }
 
         private bool InitVars()
         {
-            //throw new NotImplementedException();
+            PromptInfo("系统正在初始化，请稍候...");
             return false;
+        }
+
+        private void OnFormClosed(object sender, FormClosedEventArgs e)
+        {
+            faceDetect.DoExit();
+        }
+
+        /// <summary>
+        /// 信息提示
+        /// </summary>
+        /// <param name="strInfo"></param>
+        public void PromptInfo(string strInfo)
+        {
+            if (this.lblInfo.InvokeRequired)
+            {
+                SetInfoTextCallback d = new SetInfoTextCallback(PromptInfo);
+                this.Invoke(d, new object[]{ strInfo});
+            }
+            else
+            {
+                this.lblInfo.Text = strInfo;
+            }
         }
 
     }

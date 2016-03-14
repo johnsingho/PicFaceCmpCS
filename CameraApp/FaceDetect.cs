@@ -2,6 +2,7 @@
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
+using System.Threading;
 
 namespace CameraApp
 {
@@ -24,6 +25,8 @@ namespace CameraApp
         }
 
         private ConfigInfo configInfo=new ConfigInfo();
+        private MainWin mainWin;
+        private ComIdCardReader idCardReader=new ComIdCardReader();
 
         public bool LoadConfigInfo()
         {
@@ -53,6 +56,100 @@ namespace CameraApp
             config.AppSettings.Settings["InitFaceCmpRate"].Value = configInfo.InitFaceCmpRate.ToString();
 
             config.Save(ConfigurationSaveMode.Full);
+        }
+
+        public void BindForm(MainWin mainWin)
+        {
+            this.mainWin = mainWin;
+        }
+
+        public void PromptInfo(string strInfo)
+        {
+            mainWin.PromptInfo(strInfo);
+        }
+        
+        /// <summary>
+        /// 清退工作
+        /// </summary>
+        public void DoExit()
+        {
+            
+        }
+
+        /// <summary>
+        /// 硬件设备初始化
+        /// </summary>
+        public void InitEnv()
+        {
+            Thread thDevInit = new Thread(FuncInitEnv);
+            thDevInit.Start();
+        }
+
+        private void FuncInitEnv()
+        {
+            //初始化身份证读取模块
+            bool bInitID = TryInitIDCardReader();
+
+            //初始化人脸识别库
+            bool bInitFace = TryInitFaceCmp();
+            //初始化两个摄像头
+            bool bInitCam = TryInitCameras();
+            //初始化灯板、闸门
+            bool bInitGateBoard = TryInitGateBoard();
+
+            if (bInitID && bInitFace && bInitCam && bInitGateBoard)
+            {
+                string str=string.Format("欢迎使用\n%s", ConstValue.DEF_SYS_NAME);
+                PromptInfo(str);
+                //StartMainThread();
+
+                PlayVoice(ConstValue.VOICE_INIT_OK);
+            }
+            else
+            {
+                PlayVoice(ConstValue.VOICE_INIT_FAIL);
+            }
+        }
+
+        private void PlayVoice(string strVoice)
+        {
+            
+        }
+
+        private bool TryInitGateBoard()
+        {
+            return false;
+        }
+
+        private bool TryInitCameras()
+        {
+            return false;
+        }
+
+        private bool TryInitFaceCmp()
+        {
+            return false;
+        }
+
+        private bool TryInitIDCardReader()
+        {
+            bool bOpen = idCardReader.TryOpenCOM(this.configInfo.IDReaderCOM);
+            if (bOpen) { return true; }
+            const int MAX_RETRY_COM = 20;
+            for (int i = 0; i < MAX_RETRY_COM; i++)
+            {
+                if (i == this.configInfo.IDReaderCOM)
+                {
+                    continue;
+                }
+                bOpen = idCardReader.TryOpenCOM(i);
+                if (bOpen)
+                {
+                    this.configInfo.IDReaderCOM = i;
+                    break;
+                }
+            }
+            return bOpen;
         }
     }
 }

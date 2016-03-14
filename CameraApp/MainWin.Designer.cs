@@ -28,7 +28,28 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWin));
+            this.picCtrlTicket = new CameraApp.PicCtrl();
+            this.lblInfo = new System.Windows.Forms.Label();
             this.SuspendLayout();
+            // 
+            // picCtrlTicket
+            // 
+            this.picCtrlTicket.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.picCtrlTicket.Location = new System.Drawing.Point(732, 481);
+            this.picCtrlTicket.Name = "picCtrlTicket";
+            this.picCtrlTicket.Size = new System.Drawing.Size(260, 195);
+            this.picCtrlTicket.TabIndex = 0;
+            // 
+            // lblInfo
+            // 
+            this.lblInfo.BackColor = System.Drawing.Color.Transparent;
+            this.lblInfo.Font = new System.Drawing.Font("Microsoft YaHei", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.lblInfo.ForeColor = System.Drawing.Color.MediumBlue;
+            this.lblInfo.Location = new System.Drawing.Point(331, 481);
+            this.lblInfo.Name = "lblInfo";
+            this.lblInfo.Size = new System.Drawing.Size(358, 225);
+            this.lblInfo.TabIndex = 1;
             // 
             // MainWin
             // 
@@ -38,19 +59,26 @@
             this.BackgroundImage = global::CameraApp.Properties.Resources.bg;
             this.ClientSize = new System.Drawing.Size(1024, 768);
             this.ControlBox = false;
+            this.Controls.Add(this.lblInfo);
+            this.Controls.Add(this.picCtrlTicket);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.ImeMode = System.Windows.Forms.ImeMode.Off;
             this.MaximizeBox = false;
             this.MinimumSize = new System.Drawing.Size(800, 600);
             this.Name = "MainWin";
             this.ShowIcon = false;
             this.Text = "MainWin";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDown);
             this.ResumeLayout(false);
 
         }
 
         #endregion
+
+        private PicCtrl picCtrlTicket;
+        private System.Windows.Forms.Label lblInfo;
     }
 }
 

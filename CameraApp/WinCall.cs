@@ -25,6 +25,17 @@ namespace JohnKit
         public static extern int SendMessage(IntPtr hWnd,int Msg, int wParam, int lParam);
         [DllImportAttribute("user32.dll")]
         public static extern bool ReleaseCapture();
+        
+        [DllImport("Kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        public static extern void CopyMemory(IntPtr Destination, IntPtr Source, [MarshalAs(UnmanagedType.U4)] int Length);
+
+        public static void ZeroArr(byte[] arr)
+        {
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = 0x0;
+            }
+        }
     }
 
 }
