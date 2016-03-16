@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JohnKit
 {
@@ -35,6 +32,19 @@ namespace JohnKit
             {
                 arr[i] = 0x0;
             }
+        }
+
+        public static void CopyArr(byte[] dstArr, int iDstStart, byte[] srcArr, int iSrcStart, int n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                dstArr[iDstStart + i] = srcArr[iSrcStart + i];
+            }
+        }
+
+        public static void TraceException(Exception exception)
+        {
+            Trace.WriteLine("***Exception: " + exception.Message);
         }
     }
 

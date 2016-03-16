@@ -1,13 +1,24 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.Runtime.InteropServices;
 using JohnKit;
 
 namespace CameraApp
 {
-    internal class ComIdCardReader : IDisposable
+    public class ComIdCardReader : IDisposable
     {
         private SerialPort comPort = new SerialPort();
         private byte[] mRecvData = new byte[2048];
+
+        private byte[] pucIIN = new byte[4];//证/卡芯片管理号
+        private byte[] pucSN  = new byte[8];//证/卡芯片序列号
+        private byte[] pucBaseText = new byte[260];//固定信息文本最多256个字节
+        private byte[] pucPhoto = new byte[1024];  //固定信息照片最多1024个字节
+        private byte[] pucExtra = new byte[72];    //追加信息最多70字节
+        private int _pucBaseTextLen = 0;
+        private int _pucPhotoLen = 0;
+
 
         public ComIdCardReader()
         {
@@ -20,17 +31,23 @@ namespace CameraApp
             comPort.ReadTimeout = 500;
             comPort.WriteTimeout = 500;
         }
+
+        public void Dispose()
+        {
+            comPort.Dispose();
+        }
+
         public bool TryOpenCOM(int idReaderCom)
         {
             string strPort = string.Format("com{0}", idReaderCom);
             comPort.PortName = strPort;
-            bool bRet = false;
             try
             {
                 comPort.Open();
             }
-            catch
+            catch(Exception ex)
             {
+                WinCall.TraceException(ex);
             }
             if(comPort.IsOpen)
             {
@@ -160,10 +177,201 @@ namespace CameraApp
             }
             return bRet;
         }
-
-        public void Dispose()
+        
+        //复位SAM_V 
+        int SAM_Reset()
         {
-            comPort.Dispose();
+            byte sw1, sw2, sw3;
+            int ret;
+            ret = SendCommand(0x10, 0xff, out sw1, out sw2, out sw3, 1000);
+            if ((ret > 0) && (sw3 == 0x90))
+                return 0;
+            return ret;
         }
+
+        //设置COM口波特率
+        //默认是115200
+        int SetBaudRate(int nBaud)
+        {
+            byte sw1, sw2, sw3;
+            int ret;
+            byte nRate = 0x00;
+            switch (nBaud)
+            {
+                case 57600: nRate = 0x01; break;
+                case 38400: nRate = 0x02; break;
+                case 19200: nRate = 0x03; break;
+                case 9600: nRate = 0x04; break;
+                default: nRate = 0x00; break;
+            }
+            ret = SendCommand(0x60, nRate, out sw1, out sw2, out sw3, 1000);
+            if ((ret > 0) && (sw3 == 0x90))
+            {
+                return 0;
+            }
+            return -1;
+        }
+
+        //寻找证/卡
+        int SAM_FindCard()
+        {
+            byte sw1, sw2, sw3;
+            int ret;
+            ret = SendCommand(0x20, 0x01, out sw1, out sw2, out sw3, 1000);
+            if ((ret > 0) && (sw3 == 0x9f))
+            {
+                WinCall.CopyArr(pucIIN, 0, mRecvData, 10, 4);
+                //memcpy(pucIIN, &mRecvData[10], 4);
+                //printf("FindCard,sw:%d,%d,%d.\n",sw1,sw2,sw3);
+                return 0;
+            }
+            return ret;
+        }
+
+        int SAM_SelectCard()
+        {
+            byte sw1, sw2, sw3;
+            int ret;
+            //aa aa aa 96 69 00 03 20 01 22 ed
+            ret = SendCommand(0x20, 0x02, out sw1, out sw2, out sw3, 1000);
+            if ((ret > 0) && (sw3 == 0x90))
+            {
+                WinCall.CopyArr(pucSN, 0, mRecvData, 10, 8);
+                return 0;
+            }
+            return ret;
+        }
+
+
+        //读固定信息 
+        int SAM_ReadBaseMsg()
+        {
+            byte sw1, sw2, sw3;
+            int ret = SendCommand(0x30, 0x01, out sw1, out sw2, out sw3, 3000);
+            const int RET_HEAD = 10;
+
+            if ((ret > 0) && (sw3 == 0x90))
+            {
+                //所有固定文本信息,其实都是256
+                _pucBaseTextLen = (mRecvData[RET_HEAD] << 8) | mRecvData[RET_HEAD + 1];
+                WinCall.CopyArr(pucBaseText, 0, mRecvData, RET_HEAD+4, _pucBaseTextLen);
+
+                //读出的照片数据,其实都是1024
+                _pucPhotoLen = (mRecvData[RET_HEAD + 2] << 8) | mRecvData[RET_HEAD + 3];
+                WinCall.CopyArr(pucPhoto, 0, mRecvData, RET_HEAD+4+_pucBaseTextLen, _pucPhotoLen); //?
+
+                return 0;
+            }
+            return -1;
+        }
+
+        int ReadCard()
+        {   
+            ResetData();
+            
+            int nRet = SAM_FindCard();
+            if (nRet != 0)
+                return nRet;
+            nRet = SAM_SelectCard();
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+            nRet = SAM_ReadBaseMsg();
+            return nRet;
+        }
+
+
+        int SAM_ReadExtraMsg()
+        {
+            byte sw1, sw2, sw3;
+            int ret = SendCommand(0x30, 0x03, out sw1, out sw2, out sw3, 3000);
+            const int RET_HEAD = 10;
+
+            if ((ret > 0) && (sw3 == 0x90))
+            {
+                WinCall.CopyArr(pucExtra, 0, mRecvData, RET_HEAD, 70);
+                return 0;
+            }
+            return ret;
+        }
+
+        void ResetData()
+        {
+            WinCall.ZeroArr(mRecvData);
+            WinCall.ZeroArr(pucIIN);
+            WinCall.ZeroArr(pucSN);
+            WinCall.ZeroArr(pucBaseText);
+            WinCall.ZeroArr(pucPhoto);
+            WinCall.ZeroArr(pucExtra);
+            WinCall.ZeroArr(mRecvData);
+
+            //m_bLastRead = false;
+            _pucBaseTextLen = 0;
+            _pucPhotoLen = 0;
+        }
+
+
+
+        private static void PrintGetBmpError(int nRet)
+        {
+            string strRet = "ok";
+            switch (nRet)
+            {
+                case 1:
+                    strRet = "相片解码正确";
+                    break;
+                case 0:
+                    strRet = "调用sdtapi.dll错误";
+                    break;
+                case -1:
+                    strRet = "相片解码错误";
+                    break;
+                case -2:
+                    strRet = "wlt文件后缀错误";
+                    break;
+                case -3:
+                    strRet = "wlt文件打开错误";
+                    break;
+                case -4:
+                    strRet = "wlt文件格式错误";
+                    break;
+                case -5:
+                    strRet = "软件未授权";
+                    break;
+                case -6:
+                    strRet = "设备连接错误";
+                    break;
+                default:
+                    strRet = "unknown";
+                    break;
+            }
+
+            Trace.WriteLine(string.Format("***GetBmp return,{0}", strRet));
+        }
+
+
+        //[DllImport("WltRS.dll", EntryPoint = "GetBmp", CharSet =CharSet.Ansi)]
+        //public static extern int GetBmp(IntPtr wltfile, [MarshalAs(UnmanagedType.U4)] int intf);
+        [DllImport("WltRS.dll", EntryPoint = "GetBmp", CharSet = CharSet.Ansi)]
+        public static extern int GetBmp([MarshalAs(UnmanagedType.LPStr)]string wltfile, 
+                                        [MarshalAs(UnmanagedType.U4)] int intf);
+
+
+        //wlt file  ----> bmp file
+        // 1成功
+        // 0或负数失败
+        int wlt2bmp(string filename)
+        {
+            int ret = GetBmp(filename, 2);
+            PrintGetBmpError(ret);
+            return ret;
+        }
+
+        //取读取到的固定信息
+        byte[] GetBaseText() { return pucBaseText; }
+        //取读取的图片数据
+        byte[] GetPhoto() { return pucPhoto; }
+
     }
 }

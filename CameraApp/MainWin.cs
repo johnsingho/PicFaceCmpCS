@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CameraApp.MyCap;
 using JohnKit;
 
 namespace CameraApp
@@ -24,9 +25,15 @@ namespace CameraApp
             LoadConfigInfo();
             InitVars();
             InitEnv();
+
+#if !DEBUG
+            //仅用于调试
+            btnTestExit.Visible = false;
+#endif
         }
         private void InitEnv()
         {
+            faceDetect.BindForm(this);
             faceDetect.InitEnv();
         }
 
@@ -44,7 +51,6 @@ namespace CameraApp
 
         private bool LoadConfigInfo()
         {
-            faceDetect.BindForm(this);
             return faceDetect.LoadConfigInfo();
         }
 
@@ -74,6 +80,36 @@ namespace CameraApp
             {
                 this.lblInfo.Text = strInfo;
             }
+        }
+
+        private void btnTestExit_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        delegate void CreateTickCamOperDelegate(FaceDetect faceDetect);
+        private void DoCreateTicketCamOper(FaceDetect faceDetect)
+        {
+
+            const int VIDEOWIDTH = 640;
+            const int VIDEOHEIGHT = 480;
+            const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
+            Capture tickCamOper = null;
+            try
+            {
+                tickCamOper = new Capture(faceDetect.GetCamTicketID(), VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, picCtrlTicket);
+            }
+            catch (Exception ex)
+            {
+                WinCall.TraceException(ex);
+            }
+            faceDetect.SetTickCamOper(tickCamOper);
+        }
+
+
+        public void CreateTicketCamOper(FaceDetect faceDetect)
+        {
+            this.Invoke(new CreateTickCamOperDelegate(DoCreateTicketCamOper), faceDetect);
         }
 
     }

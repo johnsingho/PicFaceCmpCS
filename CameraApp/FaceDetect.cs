@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
+using CameraApp.MyCap;
+using JohnKit;
 
 namespace CameraApp
 {
@@ -10,10 +12,11 @@ namespace CameraApp
     /// 主要操作类
     /// H.Z.XIN 2016-03-08
     /// </summary>
-    public class FaceDetect
+    public class FaceDetect : IDisposable
     {
         private class ConfigInfo
         {
+            public bool bNeedSave;
             public int IDReaderCOM;
             public int GateBoardCOM;
             public int CamFaceID;
@@ -24,9 +27,14 @@ namespace CameraApp
             public int InitFaceCmpRate;
         }
 
-        private ConfigInfo configInfo=new ConfigInfo();
-        private MainWin mainWin;
-        private ComIdCardReader idCardReader=new ComIdCardReader();
+        private ConfigInfo configInfo = new ConfigInfo();
+        private MainWin mainWin = null;
+
+        private ComIdCardReader idCardReader = new ComIdCardReader();
+        private GateBoardOper gateBoardOper = new GateBoardOper();
+        private FaceCmpEngine faceCmpEngine = new FaceCmpEngine();
+        private MindVisionCamOper indusCamOper = new MindVisionCamOper();
+        private Capture tickCamOper = null;
 
         public bool LoadConfigInfo()
         {
@@ -39,7 +47,7 @@ namespace CameraApp
             configInfo.ReqFaceCmpScore = Int32.Parse(ConfigurationManager.AppSettings["ReqFaceCmpScore"]);
             configInfo.InitFaceCmpRate = Int32.Parse(ConfigurationManager.AppSettings["InitFaceCmpRate"]);
 
-          
+
             return true;
         }
 
@@ -56,6 +64,7 @@ namespace CameraApp
             config.AppSettings.Settings["InitFaceCmpRate"].Value = configInfo.InitFaceCmpRate.ToString();
 
             config.Save(ConfigurationSaveMode.Full);
+            configInfo.bNeedSave = false;
         }
 
         public void BindForm(MainWin mainWin)
@@ -67,13 +76,13 @@ namespace CameraApp
         {
             mainWin.PromptInfo(strInfo);
         }
-        
+
         /// <summary>
         /// 清退工作
         /// </summary>
         public void DoExit()
         {
-            
+
         }
 
         /// <summary>
@@ -82,6 +91,8 @@ namespace CameraApp
         public void InitEnv()
         {
             Thread thDevInit = new Thread(FuncInitEnv);
+            thDevInit.Name = "DeviceInitThread";
+            thDevInit.IsBackground = true;
             thDevInit.Start();
         }
 
@@ -99,7 +110,7 @@ namespace CameraApp
 
             if (bInitID && bInitFace && bInitCam && bInitGateBoard)
             {
-                string str=string.Format("欢迎使用\n%s", ConstValue.DEF_SYS_NAME);
+                string str = string.Format("欢迎使用\n%s", ConstValue.DEF_SYS_NAME);
                 PromptInfo(str);
                 //StartMainThread();
 
@@ -113,22 +124,7 @@ namespace CameraApp
 
         private void PlayVoice(string strVoice)
         {
-            
-        }
 
-        private bool TryInitGateBoard()
-        {
-            return false;
-        }
-
-        private bool TryInitCameras()
-        {
-            return false;
-        }
-
-        private bool TryInitFaceCmp()
-        {
-            return false;
         }
 
         private bool TryInitIDCardReader()
@@ -146,10 +142,48 @@ namespace CameraApp
                 if (bOpen)
                 {
                     this.configInfo.IDReaderCOM = i;
+                    this.configInfo.bNeedSave = true;
                     break;
                 }
             }
             return bOpen;
+        }
+
+        private bool TryInitGateBoard()
+        {
+            bool bOpen = gateBoardOper.TryOpenCOM(configInfo.GateBoardCOM);
+            return bOpen;
+        }
+
+        private bool TryInitCameras()
+        {
+            //(1)人脸摄像头初始化
+
+            //(2)车票摄像头初始化
+            mainWin.CreateTicketCamOper(this);
+
+            return false;
+        }
+
+        private bool TryInitFaceCmp()
+        {
+            return false;
+        }
+
+        public void Dispose()
+        {
+            idCardReader.Dispose();
+        }
+        
+
+        public int GetCamTicketID()
+        {
+            return configInfo.CamTicketID;
+        }
+
+        public void SetTickCamOper(Capture tickCamOper)
+        {
+            this.tickCamOper = tickCamOper;
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace CameraApp
+﻿using System;
+
+namespace CameraApp
 {
     partial class MainWin
     {
@@ -31,6 +33,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWin));
             this.picCtrlTicket = new CameraApp.PicCtrl();
             this.lblInfo = new System.Windows.Forms.Label();
+            this.btnTestExit = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // picCtrlTicket
@@ -51,6 +54,16 @@
             this.lblInfo.Size = new System.Drawing.Size(358, 225);
             this.lblInfo.TabIndex = 1;
             // 
+            // btnTestExit
+            // 
+            this.btnTestExit.Location = new System.Drawing.Point(233, 12);
+            this.btnTestExit.Name = "btnTestExit";
+            this.btnTestExit.Size = new System.Drawing.Size(71, 26);
+            this.btnTestExit.TabIndex = 2;
+            this.btnTestExit.Text = "Test Exit";
+            this.btnTestExit.UseVisualStyleBackColor = true;
+            this.btnTestExit.Click += new System.EventHandler(this.btnTestExit_Click);
+            // 
             // MainWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -59,6 +72,7 @@
             this.BackgroundImage = global::CameraApp.Properties.Resources.bg;
             this.ClientSize = new System.Drawing.Size(1024, 768);
             this.ControlBox = false;
+            this.Controls.Add(this.btnTestExit);
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.picCtrlTicket);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
@@ -79,6 +93,8 @@
 
         private PicCtrl picCtrlTicket;
         private System.Windows.Forms.Label lblInfo;
+        private System.Windows.Forms.Button btnTestExit;
+
     }
 }
 
