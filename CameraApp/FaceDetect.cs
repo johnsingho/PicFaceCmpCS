@@ -76,6 +76,10 @@ namespace CameraApp
         {
             mainWin.PromptInfo(strInfo);
         }
+        private void PromptError(string strErr)
+        {
+            mainWin.PromptError(strErr);
+        }
 
         /// <summary>
         /// 清退工作
@@ -96,21 +100,48 @@ namespace CameraApp
             thDevInit.Start();
         }
 
+        /// <summary>
+        /// 线程返回值
+        /// </summary>
+        private class ThreadBoolRet
+        {
+            public bool bResult = false;
+        }
+
         private void FuncInitEnv()
         {
             //初始化身份证读取模块
-            bool bInitID = TryInitIDCardReader();
+            ThreadBoolRet thDataIDCard = new ThreadBoolRet();
+            Thread thIDCard = new Thread(TryInitIDCardReader);
+            thIDCard.IsBackground = true;
+            thIDCard.Start(thDataIDCard);
 
             //初始化人脸识别库
-            bool bInitFace = TryInitFaceCmp();
-            //初始化两个摄像头
-            bool bInitCam = TryInitCameras();
-            //初始化灯板、闸门
-            bool bInitGateBoard = TryInitGateBoard();
+            ThreadBoolRet thDataFaceCmp = new ThreadBoolRet();
+            Thread thFaceCmp = new Thread(TryInitFaceCmp);
+            thFaceCmp.IsBackground = true;
+            thFaceCmp.Start(thDataFaceCmp);
 
-            if (bInitID && bInitFace && bInitCam && bInitGateBoard)
+            //初始化两个摄像头
+            ThreadBoolRet thDataInitCam = new ThreadBoolRet();
+            Thread thInitCam = new Thread(TryInitCameras);
+            thInitCam.IsBackground = true;
+            thInitCam.Start(thDataInitCam);
+
+            //初始化灯板、闸门
+            ThreadBoolRet thDataGateBoard = new ThreadBoolRet();
+            Thread thGateBoard = new Thread(TryInitGateBoard);
+            thGateBoard.IsBackground = true;
+            thGateBoard.Start(thDataGateBoard);
+
+            thIDCard.Join();
+            thFaceCmp.Join();
+            thInitCam.Join();
+            thGateBoard.Join();
+
+            if (thDataIDCard.bResult && thDataFaceCmp.bResult && thDataInitCam.bResult && thDataGateBoard.bResult)
             {
-                string str = string.Format("欢迎使用\n%s", ConstValue.DEF_SYS_NAME);
+                string str = string.Format("\n欢迎使用{0}", ConstValue.DEF_SYS_NAME);
                 PromptInfo(str);
                 //StartMainThread();
 
@@ -127,10 +158,15 @@ namespace CameraApp
 
         }
 
-        private bool TryInitIDCardReader()
+        private void TryInitIDCardReader(object o)
         {
+            ThreadBoolRet thRet = (ThreadBoolRet)o;
             bool bOpen = idCardReader.TryOpenCOM(this.configInfo.IDReaderCOM);
-            if (bOpen) { return true; }
+            if (bOpen)
+            {
+                thRet.bResult = true;
+                return;
+            }
             const int MAX_RETRY_COM = 20;
             for (int i = 0; i < MAX_RETRY_COM; i++)
             {
@@ -146,33 +182,59 @@ namespace CameraApp
                     break;
                 }
             }
-            return bOpen;
+            thRet.bResult = bOpen;
         }
 
-        private bool TryInitGateBoard()
+        private void TryInitGateBoard(object o)
         {
+            ThreadBoolRet thRet = (ThreadBoolRet)o;
             bool bOpen = gateBoardOper.TryOpenCOM(configInfo.GateBoardCOM);
-            return bOpen;
+            thRet.bResult = bOpen;
         }
 
-        private bool TryInitCameras()
+        private void TryInitCameras(object o)
         {
-            //(1)人脸摄像头初始化
-
-            //(2)车票摄像头初始化
+            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            //(1)车票摄像头初始化
             mainWin.CreateTicketCamOper(this);
 
-            return false;
+            //(2)人脸摄像头初始化
+            bool bCamFace = indusCamOper.Init();
+            if (!bCamFace)
+            {
+                PromptError("初始化人脸摄像头SDK失败");
+            }
+            else
+            {
+                bCamFace = indusCamOper.InitCamera();
+                if (!bCamFace)
+                {
+                    PromptError("连接到人脸摄像头失败");
+                }
+            }
+
+            thRet.bResult=bCamFace;
         }
 
-        private bool TryInitFaceCmp()
+        /// <summary>
+        /// 初始化人脸识别库
+        /// </summary>
+        /// <returns></returns>
+        private void TryInitFaceCmp(object o)
         {
-            return false;
+            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            bool bRet = faceCmpEngine.InitLib();
+            if (!bRet)
+            {
+                PromptError("人脸识别模块初始化失败");
+            }
+            thRet.bResult = bRet;
         }
 
         public void Dispose()
         {
             idCardReader.Dispose();
+            faceCmpEngine.Dispose();
         }
         
 

@@ -16,6 +16,8 @@ namespace CameraApp
     {
         private FaceDetect faceDetect=new FaceDetect();
 
+        private static readonly Color DefPromptClr = Color.Blue;
+
         delegate void SetInfoTextCallback(string text);
 
 
@@ -71,6 +73,14 @@ namespace CameraApp
         /// <param name="strInfo"></param>
         public void PromptInfo(string strInfo)
         {
+            PromptInfo(strInfo, DefPromptClr);
+        }
+        public void PromptError(string strErr)
+        {
+            PromptInfo(strErr, Color.Red);
+        }
+        public void PromptInfo(string strInfo, Color clrText)
+        {
             if (this.lblInfo.InvokeRequired)
             {
                 SetInfoTextCallback d = new SetInfoTextCallback(PromptInfo);
@@ -78,6 +88,7 @@ namespace CameraApp
             }
             else
             {
+                this.lblInfo.ForeColor = clrText;
                 this.lblInfo.Text = strInfo;
             }
         }
@@ -97,11 +108,15 @@ namespace CameraApp
             Capture tickCamOper = null;
             try
             {
-                tickCamOper = new Capture(faceDetect.GetCamTicketID(), VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, picCtrlTicket);
+                tickCamOper = new Capture(faceDetect.GetCamTicketID(), VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, tickPicCtrl);
             }
             catch (Exception ex)
             {
                 WinCall.TraceException(ex);
+            }
+            if (tickCamOper == null)
+            {
+                PromptInfo("车票摄像头初始化失败！", Color.Red);
             }
             faceDetect.SetTickCamOper(tickCamOper);
         }
