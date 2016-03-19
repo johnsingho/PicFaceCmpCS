@@ -50,7 +50,7 @@ namespace CameraApp
             comPort.DataBits = 8;
             comPort.StopBits = StopBits.One;
             comPort.Handshake = Handshake.None; //!
-
+            comPort.Parity = Parity.None;
             comPort.ReadTimeout = 800;
             comPort.WriteTimeout = 800;
 
@@ -128,18 +128,27 @@ namespace CameraApp
             return ret;
         }
 
+
         private bool ComRead(int iStart, int nRead, int nTimeout)
         {
             comPort.ReadTimeout = nTimeout;
-            int nRet = 0;
+
+            int nGet = 0;
+            int nToRead = nRead;
             try
             {
-                nRet = comPort.Read(mRecvbuf, iStart, nRead);
+                while (nGet < nRead)
+                {
+                    nGet += comPort.Read(mRecvbuf, iStart + nGet, nToRead);
+                    nToRead = nRead - nGet;
+                }
+
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                WinCall.TraceException("GateBoardOper.ComRead", ex);
             }
-            return (nRet == nRead);
+            return (nGet == nRead);
         }
 
         //返回0成功
@@ -176,7 +185,7 @@ namespace CameraApp
             crc = CalcCrc(mRecvbuf, 3, packlen-5);
             if (mRecvbuf[packlen - 2] != crc)
             {
-                Trace.WriteLine("***RecvPack,BAD CRC.");
+                WinCall.TraceMessage("***RecvPack,BAD CRC.");
                 return -2;
             }
 
@@ -233,7 +242,7 @@ namespace CameraApp
             if (!bOk)
             {
                 string str = string.Format("***获取命令反馈失败: cmd={0}, data={1}", LOCK_CMD_LED, sData);
-                Trace.WriteLine(str);
+                WinCall.TraceMessage(str);
             }
             return bOk;
         }
@@ -260,7 +269,7 @@ namespace CameraApp
             if (!bOk)
             {
                 string str = string.Format("***发送闸门命令失败: cmd={0}, data={1}", LOCK_CMD_GATE, sData);
-                Trace.WriteLine(str);
+                WinCall.TraceMessage(str);
             }
             return bOk;
         }

@@ -1,4 +1,5 @@
-using System;
+ï»¿using System;
+using System.Text;
 
 namespace CameraApp
 {
@@ -18,7 +19,7 @@ namespace CameraApp
         public string m_strAddition;
         #endregion
 
-        IDBaseTextDecoder()
+        public IDBaseTextDecoder()
         {
             Reset();
         }
@@ -37,134 +38,140 @@ namespace CameraApp
             m_strAddition = string.Empty;
         }
 
-        bool Decode(byte[] pBaseText)
+        public bool Decode(byte[] pBaseText)
         {
             if (pBaseText == null || pBaseText.Length == 0)
             {
                 return false;
             }
 
-            #region ½âÎöÎÄ±¾
+            #region è§£ææ–‡æœ¬
             int iPos = 0;
             int iLen = 30;
-            m_strName = BitConverter.ToString(pBaseText, iPos, iLen);
+            m_strName = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 2;
-            short nSex = BitConverter.ToInt16(pBaseText, iPos);
+            short nSex = Int16.Parse(DecodeStr(pBaseText, iPos, iLen));
             switch (nSex)
             {
-                case 1: m_strSex="ÄĞ"; break;
-                case 2: m_strSex = "Å®"; break;
+                case 1: m_strSex = "ç”·"; break;
+                case 2: m_strSex = "å¥³"; break;
                 case 9:
-                default:m_strSex="ÆäËû"; break;
+                default: m_strSex = "å…¶ä»–"; break;
             }
             iPos += iLen;
             iLen = 4;
-            //Ãñ×å
-            int nEthnic = BitConverter.ToInt32(pBaseText, iPos);
+            //æ°‘æ—
+            int nEthnic = Int32.Parse(DecodeStr(pBaseText, iPos, iLen));
             m_strEthnic = DecodeEthnic(nEthnic);
             iPos += iLen;
             iLen = 16;
-            //³öÉúÈÕÆÚ
-            m_strBirthDay = BitConverter.ToString(pBaseText, iPos, iLen);
+            //å‡ºç”Ÿæ—¥æœŸ
+            m_strBirthDay = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 70;
-            //µØÖ·
-            m_strAddress = BitConverter.ToString(pBaseText, iPos, iLen);
+            //åœ°å€
+            m_strAddress = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 36;
-            //Éí·İÖ¤ºÅ
-            m_strID = BitConverter.ToString(pBaseText, iPos, iLen);
+            //èº«ä»½è¯å·
+            m_strID = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 30;
-            //Ç©·¢µ¥Î»
-            m_strDepartment = BitConverter.ToString(pBaseText, iPos, iLen);
+            //ç­¾å‘å•ä½
+            m_strDepartment = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 16;
-            //ÓĞĞ§ÆÚÆğÊ¼
-            m_strExpireBegin = BitConverter.ToString(pBaseText, iPos, iLen);
+            //æœ‰æ•ˆæœŸèµ·å§‹
+            m_strExpireBegin = DecodeStr(pBaseText, iPos, iLen);
             iPos += iLen;
             iLen = 16;
-            //ÓĞĞ§ÆÚ½áÊø
-            m_strExpireEnd = BitConverter.ToString(pBaseText, iPos, iLen);
+            //æœ‰æ•ˆæœŸç»“æŸ
+            m_strExpireEnd = DecodeStr(pBaseText, iPos, iLen);
 
             iPos += iLen;
             iLen = 36;
-            //×·¼ÓĞÅÏ¢
-            m_strAddition = BitConverter.ToString(pBaseText, iPos, iLen);
+            //è¿½åŠ ä¿¡æ¯
+            m_strAddition = DecodeStr(pBaseText, iPos, iLen);
             #endregion
 
             return true;
         }
-
-    
-    private static string DecodeEthnic(int nEthnic)
-    {
-        switch (nEthnic)
+        
+        private static string DecodeStr(byte[] pBaseText, int iPos, int iLen)
         {
-            case 1: return "ºº×å";
-            case 2: return "ÃÉ¹Å×å";
-            case 3: return "»Ø×å";
-            case 4: return "²Ø×å";
-            case 5: return "Î¬Îá¶û×å";
-            case 6: return "Ãç×å";
-            case 7: return "ÒÍ×å";
-            case 8: return "×³×å";
-            case 9: return "²¼ÒÀ×å";
-            case 10: return "³¯ÏÊ×å";
-            case 11: return "Âú×å";
-            case 12: return "¶±×å";
-            case 13: return "Ñş×å";
-            case 14: return "°××å";
-            case 15: return "ÍÁ¼Ò×å";
-            case 16: return "¹şÄá×å";
-            case 17: return "¹şÈø¿Ë×å";
-            case 18: return "´ö×å";
-            case 19: return "Àè×å";
-            case 20: return "ÀüËÛ×å";
-            case 21: return "Øô×å";
-            case 22: return "î´×å";
-            case 23: return "¸ßÉ½×å";
-            case 24: return "À­ìï×å";
-            case 25: return "Ë®×å";
-            case 26: return "¶«Ïç×å";
-            case 27: return "ÄÉÎ÷×å";
-            case 28: return "¾°ÆÄ×å";
-            case 29: return "¿Â¶û¿Ë×Î×å";
-            case 30: return "ÍÁ×å";
-            case 31: return "´ïÎÓ¶û×å";
-            case 32: return "ØïÀĞ×å";
-            case 33: return "Ç¼×å";
-            case 34: return "²¼ÀÊ×å";
-            case 35: return "ÈöÀ­×å";
-            case 36: return "Ã«ÄÑ×å";
-            case 37: return "ØîÀĞ×å";
-            case 38: return "Îı²®×å";
-            case 39: return "°¢²ı×å";
-            case 40: return "ÆÕÃ××å";
-            case 41: return "Ëş¼ª¿Ë×å";
-            case 42: return "Å­×å";
-            case 43: return "ÎÚ×Î±ğ¿Ë×å";
-            case 44: return "¶íÂŞË¹×å";
-            case 45: return "¶õÎÂ¿Ë×å";
-            case 46: return "±ÀÁú×å";
-            case 47: return "±£°²×å";
-            case 48: return "Ô£¹Ì×å";
-            case 49: return "¾©×å";
-            case 50: return "ËşËş¶û×å";
-            case 51: return "¶ÀÁú×å";
-            case 52: return "¶õÂ×´º×å";
-            case 53: return "ºÕÕÜ×å";
-            case 54: return "ÃÅ°Í×å";
-            case 55: return "çó°Í×å";
-            case 56: return "»ùÅµ×å";
-            case 97: return "ÆäËû";
-            case 98: return "Íâ¹úÑªÍ³";
-            default: return "ÆäËû";
+            //m_strName = BitConverter.ToString(pBaseText, iPos, iLen);
+            string str = Encoding.Unicode.GetString(pBaseText, iPos, iLen);
+            str = str.TrimEnd(new char[] { ' ', '\t' });
+            return str;
         }
-        return "ÆäËû";
-    }
 
-     
+        private static string DecodeEthnic(int nEthnic)
+        {
+            switch (nEthnic)
+            {
+                case 1: return "æ±‰æ—";
+                case 2: return "è’™å¤æ—";
+                case 3: return "å›æ—";
+                case 4: return "è—æ—";
+                case 5: return "ç»´å¾å°”æ—";
+                case 6: return "è‹—æ—";
+                case 7: return "å½æ—";
+                case 8: return "å£®æ—";
+                case 9: return "å¸ƒä¾æ—";
+                case 10: return "æœé²œæ—";
+                case 11: return "æ»¡æ—";
+                case 12: return "ä¾—æ—";
+                case 13: return "ç‘¶æ—";
+                case 14: return "ç™½æ—";
+                case 15: return "åœŸå®¶æ—";
+                case 16: return "å“ˆå°¼æ—";
+                case 17: return "å“ˆè¨å…‹æ—";
+                case 18: return "å‚£æ—";
+                case 19: return "é»æ—";
+                case 20: return "å‚ˆåƒ³æ—";
+                case 21: return "ä½¤æ—";
+                case 22: return "ç•²æ—";
+                case 23: return "é«˜å±±æ—";
+                case 24: return "æ‹‰ç¥œæ—";
+                case 25: return "æ°´æ—";
+                case 26: return "ä¸œä¹¡æ—";
+                case 27: return "çº³è¥¿æ—";
+                case 28: return "æ™¯é¢‡æ—";
+                case 29: return "æŸ¯å°”å…‹å­œæ—";
+                case 30: return "åœŸæ—";
+                case 31: return "è¾¾æ–¡å°”æ—";
+                case 32: return "ä»«ä½¬æ—";
+                case 33: return "ç¾Œæ—";
+                case 34: return "å¸ƒæœ—æ—";
+                case 35: return "æ’’æ‹‰æ—";
+                case 36: return "æ¯›éš¾æ—";
+                case 37: return "ä»¡ä½¬æ—";
+                case 38: return "é”¡ä¼¯æ—";
+                case 39: return "é˜¿æ˜Œæ—";
+                case 40: return "æ™®ç±³æ—";
+                case 41: return "å¡”å‰å…‹æ—";
+                case 42: return "æ€’æ—";
+                case 43: return "ä¹Œå­œåˆ«å…‹æ—";
+                case 44: return "ä¿„ç½—æ–¯æ—";
+                case 45: return "é„‚æ¸©å…‹æ—";
+                case 46: return "å´©é¾™æ—";
+                case 47: return "ä¿å®‰æ—";
+                case 48: return "è£•å›ºæ—";
+                case 49: return "äº¬æ—";
+                case 50: return "å¡”å¡”å°”æ—";
+                case 51: return "ç‹¬é¾™æ—";
+                case 52: return "é„‚ä¼¦æ˜¥æ—";
+                case 53: return "èµ«å“²æ—";
+                case 54: return "é—¨å·´æ—";
+                case 55: return "çå·´æ—";
+                case 56: return "åŸºè¯ºæ—";
+                case 97: return "å…¶ä»–";
+                case 98: return "å¤–å›½è¡€ç»Ÿ";
+                default: return "å…¶ä»–";
+            }
+            return "å…¶ä»–";
+        }
+
     }
 }

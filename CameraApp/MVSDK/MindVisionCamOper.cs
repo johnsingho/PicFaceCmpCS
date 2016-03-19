@@ -60,7 +60,7 @@ namespace CameraApp
             if ((status = MvApi.CameraInit(ref sCameraList[0], -1, -1, ref m_hCamera)) != CameraSdkStatus.CAMERA_STATUS_SUCCESS)
             {
                 string msg = string.Format("***Failed to init the camera! Error code is {0}", status);
-                Trace.WriteLine(msg);
+                WinCall.TraceMessage(msg);
                 return false;
             }
 

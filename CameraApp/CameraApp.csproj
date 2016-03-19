@@ -86,6 +86,10 @@
   <ItemGroup>
     <Compile Include="ComIdCardReader.cs" />
     <Compile Include="ConstValue.cs" />
+    <Compile Include="Exam\EmptyHandler.cs" />
+    <Compile Include="Exam\HandlerBase.cs" />
+    <Compile Include="Exam\HandlerReadIDCard.cs" />
+    <Compile Include="Exam\JobManager.cs" />
     <Compile Include="FaceCmpEngine.cs" />
     <Compile Include="FaceDetect.cs" />
     <Compile Include="GateBoardOper.cs" />

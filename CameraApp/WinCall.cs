@@ -46,6 +46,14 @@ namespace JohnKit
         {
             Trace.WriteLine("***Exception: " + exception.Message);
         }
+        public static void TraceException(string sText,Exception exception)
+        {
+            Trace.WriteLine(sText +" ,Exception:"+ exception.Message);
+        }
+        public static void TraceMessage(string strMsg)
+        {
+            Trace.WriteLine(strMsg);
+        }
     }
 
 }

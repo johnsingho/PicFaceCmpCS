@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using JohnKit;
 
 namespace CameraApp
@@ -27,9 +29,10 @@ namespace CameraApp
             comPort.DataBits = 8;
             comPort.StopBits = StopBits.One;
             comPort.Handshake = Handshake.None; //!
+            comPort.Parity = Parity.None;
             
-            comPort.ReadTimeout = 500;
-            comPort.WriteTimeout = 500;
+            comPort.ReadTimeout = 1000;
+            comPort.WriteTimeout = 1000;
         }
 
         public void Dispose()
@@ -39,7 +42,7 @@ namespace CameraApp
 
         public bool TryOpenCOM(int idReaderCom)
         {
-            string strPort = string.Format("com{0}", idReaderCom);
+            string strPort = string.Format("COM{0}", idReaderCom);
             comPort.PortName = strPort;
             try
             {
@@ -85,7 +88,7 @@ namespace CameraApp
         /// <param name="sw3"></param>
         /// <param name="nTimeout"></param>
         /// <returns></returns>
-        private int SendCommand(int cmd, int para, out byte sw1, out byte sw2, out byte sw3, int nTimeout)
+        private int SendCommand(byte cmd, byte para, out byte sw1, out byte sw2, out byte sw3, int nTimeout)
         {
             byte[] cSendData = new byte[32];
             byte sendlen = 3;  //sendlen固定为3,cmd+para+chksum
@@ -100,8 +103,8 @@ namespace CameraApp
             cSendData[4] = 0X69;
             cSendData[5] = 0;
             cSendData[6] = sendlen;
-            cSendData[7] = (byte) cmd;
-            cSendData[8] = (byte) para;
+            cSendData[7] = cmd;
+            cSendData[8] = para;
             cSendData[9] = SumCheck(cSendData, 5, 4);
 
             if (!ComSend(cSendData, 0, 10))
@@ -115,7 +118,7 @@ namespace CameraApp
             }
 
             //数据头5字节，数据长度2字节
-            int nlen = (mRecvData[5] << 8) | mRecvData[6];
+            int nlen = ((int)mRecvData[5]<<8) | mRecvData[6];
             //数据长度不可能小于3
             if (nlen < 3)
             {   
@@ -129,7 +132,7 @@ namespace CameraApp
 
             int nrecv = 7 + nlen;
             byte cks = SumCheck(mRecvData, 5, nlen+2-1); //2位长度要算，但最后1位不算
-            if (mRecvData[nrecv - 1] != cks)
+            if (mRecvData[nrecv-1] != cks)
             {
                 return -1;
             }
@@ -144,15 +147,23 @@ namespace CameraApp
         private bool ComRead(int iStart, int nRead, int nTimeout)
         {
             comPort.ReadTimeout = nTimeout;
-            int nRet = 0;
+
+            int nGet = 0;
+            int nToRead = nRead;
             try
-            {
-                nRet=comPort.Read(mRecvData, iStart, nRead);
+            {   
+                while (nGet < nRead)
+                {
+                    nGet += comPort.Read(mRecvData, iStart+nGet, nToRead);
+                    nToRead = nRead - nGet;
+                }
+                
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                WinCall.TraceException("ComRead", ex);
             }
-            return (nRet == nRead);
+            return (nGet == nRead);
         }
 
         private bool ComSend(byte[] cSendData, int iStart, int n)
@@ -161,8 +172,9 @@ namespace CameraApp
             {
                 comPort.Write(cSendData, iStart, n);
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                WinCall.TraceException("ComSend", ex);
                 return false;
             }
             return true;
@@ -215,8 +227,10 @@ namespace CameraApp
         //寻找证/卡
         int SAM_FindCard()
         {
-            byte sw1, sw2, sw3;
-            int ret;
+            byte sw1 = 0;
+            byte sw2 = 0;
+            byte sw3 = 0;
+            int ret = 0;
             ret = SendCommand(0x20, 0x01, out sw1, out sw2, out sw3, 1000);
             if ((ret > 0) && (sw3 == 0x9f))
             {
@@ -230,8 +244,10 @@ namespace CameraApp
 
         int SAM_SelectCard()
         {
-            byte sw1, sw2, sw3;
-            int ret;
+            byte sw1 = 0;
+            byte sw2 = 0;
+            byte sw3 = 0;
+            int ret = 0;
             //aa aa aa 96 69 00 03 20 01 22 ed
             ret = SendCommand(0x20, 0x02, out sw1, out sw2, out sw3, 1000);
             if ((ret > 0) && (sw3 == 0x90))
@@ -265,10 +281,11 @@ namespace CameraApp
             return -1;
         }
 
-        int ReadCard()
+        public int ReadCard()
         {   
             ResetData();
-            
+            //comPort.DiscardInBuffer(); //!
+
             int nRet = SAM_FindCard();
             if (nRet != 0)
                 return nRet;
@@ -347,12 +364,10 @@ namespace CameraApp
                     break;
             }
 
-            Trace.WriteLine(string.Format("***GetBmp return,{0}", strRet));
+            WinCall.TraceMessage(string.Format("***GetBmp return,{0}", strRet));
         }
 
-
-        //[DllImport("WltRS.dll", EntryPoint = "GetBmp", CharSet =CharSet.Ansi)]
-        //public static extern int GetBmp(IntPtr wltfile, [MarshalAs(UnmanagedType.U4)] int intf);
+        
         [DllImport("WltRS.dll", EntryPoint = "GetBmp", CharSet = CharSet.Ansi)]
         public static extern int GetBmp([MarshalAs(UnmanagedType.LPStr)]string wltfile, 
                                         [MarshalAs(UnmanagedType.U4)] int intf);
@@ -369,9 +384,36 @@ namespace CameraApp
         }
 
         //取读取到的固定信息
-        byte[] GetBaseText() { return pucBaseText; }
+        public byte[] GetBaseText() { return pucBaseText; }
         //取读取的图片数据
-        byte[] GetPhoto() { return pucPhoto; }
+        public byte[] GetPhoto() { return pucPhoto; }
 
+        public bool WritePhotoFile(string strOutDir, string strID, byte[] pbyPhoto)
+        {
+            string sOutFile = Path.Combine(Application.StartupPath, strOutDir);
+            string strRela;
+            if (string.IsNullOrEmpty(strID))
+            {
+                strRela="tempPic.wlt";
+            }
+            else
+            {
+                strRela=string.Format("{0}.wlt", strID);
+            }
+
+            Directory.CreateDirectory(sOutFile);
+            sOutFile = Path.Combine(sOutFile, strRela);
+            bool bRet = false;
+            using (FileStream fileStream = File.Create(sOutFile))
+            {
+                fileStream.Write(pbyPhoto, 0, 1024);
+                bRet = true;
+            }
+            if (bRet)
+            {
+                bRet = (1==wlt2bmp(sOutFile));
+            }
+            return bRet;
+        }
     }
 }

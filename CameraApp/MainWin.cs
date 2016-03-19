@@ -127,5 +127,17 @@ namespace CameraApp
             this.Invoke(new CreateTickCamOperDelegate(DoCreateTicketCamOper), faceDetect);
         }
 
+        //通用无参数delegate
+        delegate void MyFuncDelegate();
+
+        private void _ResetIDCardInfo()
+        {
+            this.idCardGifBox.Show();
+            this.idCardPicCtrl.Hide();
+        }
+        public void ResetIDCardInfo()
+        {
+            this.Invoke(new MyFuncDelegate(_ResetIDCardInfo));
+        }
     }
 }
