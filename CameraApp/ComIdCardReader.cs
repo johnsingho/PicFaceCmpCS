@@ -20,7 +20,7 @@ namespace CameraApp
         private byte[] pucExtra = new byte[72];    //追加信息最多70字节
         private int _pucBaseTextLen = 0;
         private int _pucPhotoLen = 0;
-
+        private string strLastIDPhotoFile=string.Empty;  //最后一次成功解码的照片位置
 
         public ComIdCardReader()
         {
@@ -40,7 +40,16 @@ namespace CameraApp
             comPort.Dispose();
         }
 
-        public bool TryOpenCOM(int idReaderCom)
+        /// <summary>
+        /// 尝试打开串口
+        /// </summary>
+        /// <param name="idReaderCom"></param>
+        /// <returns>
+        /// -1 COM口不存在
+        /// 0  COM口打开失败
+        /// 1  COM口打开成功
+        /// </returns>
+        public int TryOpenCOM(int idReaderCom)
         {
             string strPort = string.Format("COM{0}", idReaderCom);
             comPort.PortName = strPort;
@@ -48,22 +57,27 @@ namespace CameraApp
             {
                 comPort.Open();
             }
-            catch(Exception ex)
+            catch (IOException)
+            {
+                return -1;
+            }
+            catch (Exception ex)
             {
                 WinCall.TraceException(ex);
+                return 0;
             }
             if(comPort.IsOpen)
             {
                 if (SAM_GetState())
                 {
-                    return true;
+                    return 1;
                 }
                 else
                 {
                     comPort.Close();
                 }
             }
-            return false;
+            return 0;
         }
 
         private bool SAM_GetState()
@@ -326,6 +340,7 @@ namespace CameraApp
             //m_bLastRead = false;
             _pucBaseTextLen = 0;
             _pucPhotoLen = 0;
+            strLastIDPhotoFile = string.Empty;
         }
 
 
@@ -388,7 +403,7 @@ namespace CameraApp
         //取读取的图片数据
         public byte[] GetPhoto() { return pucPhoto; }
 
-        public bool WritePhotoFile(string strOutDir, string strID, byte[] pbyPhoto)
+        public bool WritePhotoFile(string strOutDir, string strID)
         {
             string sOutFile = Path.Combine(Application.StartupPath, strOutDir);
             string strRela;
@@ -403,6 +418,8 @@ namespace CameraApp
 
             Directory.CreateDirectory(sOutFile);
             sOutFile = Path.Combine(sOutFile, strRela);
+
+            byte[] pbyPhoto = GetPhoto();
             bool bRet = false;
             using (FileStream fileStream = File.Create(sOutFile))
             {
@@ -412,8 +429,15 @@ namespace CameraApp
             if (bRet)
             {
                 bRet = (1==wlt2bmp(sOutFile));
+                strLastIDPhotoFile = bRet ? sOutFile : string.Empty;
             }
             return bRet;
+        }
+
+        //获取最后一次成功解码的身份证照片路径
+        public string GetLastIDPhotoFile()
+        {
+            return strLastIDPhotoFile;
         }
     }
 }

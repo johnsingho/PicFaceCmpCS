@@ -9,14 +9,17 @@ namespace CameraApp
     class ConstValue
     {
         internal static readonly string DEF_SYS_NAME = "人脸识别自助进站系统";
-        
-        internal static readonly string VOICE_INIT_OK       = "InitOk.wav";
-        internal static readonly string VOICE_INIT_FAIL     = "InitFail.wav";
-        internal static readonly string VOICE_PASS          = "pass.wav";
-        internal static readonly string VOICE_FAIL_FACECMP  = "FaceCmpFail.wav";
-        internal static readonly string VOICE_FAIL_TICKCHK  = "TicketChkFail.wav";
-        internal static readonly string VOICE_VIEW_CAM      = "viewcam.wav";
-        internal static readonly string VOICE_PLACE_TIC     = "placeTicket.wav";
+
+        //提示音路径
+        public const string VOICE_DIR = "voice\\";
+
+        public const string VOICE_INIT_OK      = "InitOk.wav";
+        public const string VOICE_INIT_FAIL    = "InitFail.wav";
+        public const string VOICE_PASS         = "pass.wav";
+        public const string VOICE_FAIL_FACECMP = "FaceCmpFail.wav";
+        public const string VOICE_FAIL_TICKCHK = "TicketChkFail.wav";
+        public const string VOICE_VIEW_CAM     = "viewcam.wav";
+        public const string VOICE_PLACE_TIC    = "placeTicket.wav";
 
         /*
         

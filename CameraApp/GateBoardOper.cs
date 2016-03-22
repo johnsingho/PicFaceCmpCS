@@ -20,7 +20,7 @@ namespace CameraApp
         //命令的参数
         private static readonly ushort CMDDATA_GATEON1 = 0x0003; /*右闸门，暂时没用 H.Z.XIN 2016-01-07*/
         private static readonly ushort CMDDATA_GATEON2 = 0x0004; /*左闸门*/
-        private static readonly ushort CMDDATA_LED1ON  = 0x0003;
+        private static readonly ushort CMDDATA_LED1ON  = 0x0003; /*摄像头红灯*/
         private static readonly ushort CMDDATA_LED1OFF = 0x0004;
         private static readonly ushort CMDDATA_LED2ON  = 0x0005;
         private static readonly ushort CMDDATA_LED2OFF = 0x0006;

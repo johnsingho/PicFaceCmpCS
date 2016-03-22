@@ -19,7 +19,7 @@ namespace CameraApp.Exam
             }
             else
             {
-                Thread.Sleep(JobManager.DEF_WAIT_POLLING);
+                JobManager.Sleep(JobManager.IDLE_WAIT_MS);
             }
         }
     }

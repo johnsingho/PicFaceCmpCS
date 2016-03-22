@@ -16,8 +16,9 @@ namespace CameraApp
         public string m_strDepartment;
         public string m_strExpireBegin;
         public string m_strExpireEnd;
-        public string m_strAddition;
+        public string m_strAddition;        
         #endregion
+        public ComIdCardReader IdCardReader { get; set; }
 
         public IDBaseTextDecoder()
         {
@@ -38,8 +39,9 @@ namespace CameraApp
             m_strAddition = string.Empty;
         }
 
-        public bool Decode(byte[] pBaseText)
+        public bool Decode()
         {
+            byte[] pBaseText = IdCardReader.GetBaseText();
             if (pBaseText == null || pBaseText.Length == 0)
             {
                 return false;
@@ -172,6 +174,6 @@ namespace CameraApp
             }
             return "其他";
         }
-
+        
     }
 }

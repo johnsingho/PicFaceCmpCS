@@ -8,7 +8,7 @@ namespace CameraApp.Exam
         public override void Do(object pData)
         {
             WinCall.TraceMessage("***EmptyHandler for test.");
-            Thread.Sleep(200);
+            JobManager.Sleep(3000);
             GetMgr().disPatch(JobManager.sHandlerReadIDCard, pData);
         }
     }

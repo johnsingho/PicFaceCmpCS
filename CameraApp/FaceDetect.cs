@@ -6,6 +6,8 @@ using System.Threading;
 using CameraApp.Exam;
 using CameraApp.MyCap;
 using JohnKit;
+using System.Media;
+using System.Drawing;
 
 namespace CameraApp
 {
@@ -27,7 +29,7 @@ namespace CameraApp
             public int ReqFaceCmpScore;
             public int InitFaceCmpRate;
         }
-
+        
         private ConfigInfo configInfo = new ConfigInfo();
         private MainWin mainWin = null;
 
@@ -41,8 +43,25 @@ namespace CameraApp
         private ManualResetEvent stopMainEvent = null;
         private Thread thMainThread=null;
 
+        #region 提示音相关
+        private SoundPlayer voiceInitOK;
+        private SoundPlayer voiceInitFail;
+        private SoundPlayer voicePass;
+        private SoundPlayer voiceFailFaceCmp;
+        private SoundPlayer voiceFailTickCHK;
+        private SoundPlayer voiceViewCam;
+        private SoundPlayer voicePlaceTic;
+        #endregion
+
         #region 一些常量
-        public static readonly string DEF_IDPIC_DIR="mod";
+        public static readonly string DEF_IDPIC_DIR = "mod";        
+        #endregion
+
+        #region 操作相关
+        //身份证照片
+        private Bitmap bmIDPhoto = null;
+        //现场照片
+        private Bitmap bmLivePhoto = null;        
         #endregion
 
 
@@ -57,8 +76,7 @@ namespace CameraApp
             configInfo.MaxRetryTicketChk = Int32.Parse(ConfigurationManager.AppSettings["MaxRetryTicketChk"]);
             configInfo.ReqFaceCmpScore = Int32.Parse(ConfigurationManager.AppSettings["ReqFaceCmpScore"]);
             configInfo.InitFaceCmpRate = Int32.Parse(ConfigurationManager.AppSettings["InitFaceCmpRate"]);
-
-
+            
             return true;
         }
 
@@ -87,7 +105,7 @@ namespace CameraApp
         {
             mainWin.PromptInfo(strInfo);
         }
-        private void PromptError(string strErr)
+        public void PromptError(string strErr)
         {
             mainWin.PromptError(strErr);
         }
@@ -157,6 +175,8 @@ namespace CameraApp
             };
             thGateBoard.Start(thDataGateBoard);
 
+            LoadVoices();
+
             thIDCard.Join();
             thFaceCmp.Join();
             thInitCam.Join();
@@ -164,10 +184,9 @@ namespace CameraApp
 
             if (thDataIDCard.bResult && thDataFaceCmp.bResult && thDataInitCam.bResult && thDataGateBoard.bResult)
             {
-                string str = string.Format("\n欢迎使用{0}", ConstValue.DEF_SYS_NAME);
+                string str = string.Format("欢迎使用{0}", ConstValue.DEF_SYS_NAME);
                 PromptInfo(str);
                 StartMainThread();
-
                 PlayVoice(ConstValue.VOICE_INIT_OK);
             }
             else
@@ -175,30 +194,83 @@ namespace CameraApp
                 PlayVoice(ConstValue.VOICE_INIT_FAIL);
             }
         }
-
-
-        private void PlayVoice(string strVoice)
+        
+        //加载提示音
+        private void LoadVoices()
         {
+            voiceInitOK = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_INIT_OK);
+            voiceInitOK.Load();            
+            voiceInitFail = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_INIT_FAIL);
+            voiceInitFail.Load();
+            voicePass = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_PASS);
+            voicePass.Load();
+            voiceFailFaceCmp = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_FAIL_FACECMP);
+            voiceFailFaceCmp.Load();
+            voiceFailTickCHK = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_FAIL_TICKCHK);
+            voiceFailTickCHK.Load();
+            voiceViewCam = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_VIEW_CAM);
+            voiceViewCam.Load();
+            voicePlaceTic = new SoundPlayer(ConstValue.VOICE_DIR + ConstValue.VOICE_PLACE_TIC);
+            voicePlaceTic.Load();
+        }
 
+        public void PlayVoice(string strVoice)
+        {
+            SoundPlayer player = null;
+            switch (strVoice)
+            {
+                case ConstValue.VOICE_INIT_OK:
+                    player = voiceInitOK;
+                    break;
+                case ConstValue.VOICE_INIT_FAIL:
+                    player = voiceInitFail;
+                    break;
+                case ConstValue.VOICE_PASS:
+                    player = voicePass;
+                    break;
+                case ConstValue.VOICE_FAIL_FACECMP:
+                    player = voiceFailFaceCmp;
+                    break;
+                case ConstValue.VOICE_FAIL_TICKCHK:
+                    player = voiceFailTickCHK;
+                    break;
+                case ConstValue.VOICE_VIEW_CAM:
+                    player = voiceViewCam;
+                    break;
+                case ConstValue.VOICE_PLACE_TIC:
+                    player = voicePlaceTic;
+                    break;
+                default: break;
+            }
+            if (player!=null)
+            {
+                player.Play();
+            }
         }
 
         private void TryInitIDCardReader(object o)
         {
             ThreadBoolRet thRet = (ThreadBoolRet)o;
-            bool bOpen = idCardReader.TryOpenCOM(this.configInfo.IDReaderCOM);
+            bool bOpen = (1==idCardReader.TryOpenCOM(this.configInfo.IDReaderCOM));
             if (bOpen)
             {
                 thRet.bResult = true;
                 return;
             }
             const int MAX_RETRY_COM = 20;
-            for (int i = 0; i < MAX_RETRY_COM; i++)
+            for (int i = 1; i <= MAX_RETRY_COM; i++)
             {
                 if (i == this.configInfo.IDReaderCOM)
                 {
                     continue;
                 }
-                bOpen = idCardReader.TryOpenCOM(i);
+                int nRet = idCardReader.TryOpenCOM(i);
+                bOpen = (1 == nRet);
+                if (-1 == nRet)
+                {
+                    //这里认为后续串口都不存在了
+                    break;
+                }
                 if (bOpen)
                 {
                     this.configInfo.IDReaderCOM = i;
@@ -266,6 +338,17 @@ namespace CameraApp
 
             idCardReader.Dispose();
             faceCmpEngine.Dispose();
+
+            if (bmIDPhoto != null)
+            {
+                bmIDPhoto.Dispose();
+                bmIDPhoto = null;
+            }
+            if (bmLivePhoto != null)
+            {
+                bmLivePhoto.Dispose();
+                bmLivePhoto = null;
+            }
         }
         
 
@@ -317,10 +400,9 @@ namespace CameraApp
         /// </summary>
         private void FuncMainFaceCmp()
         {
-            const int msWait = 200;
             JobManager jm = new JobManager();
             jm.disPatch(JobManager.sHandlerReadIDCard, this); //init
-            while (!stopMainEvent.WaitOne(msWait, true))
+            while (!stopMainEvent.WaitOne(JobManager.IDLE_WAIT_MS, true))
             {
                 jm.doWork(this);
             }
@@ -341,27 +423,76 @@ namespace CameraApp
                 //UpdatePromptInfo("请将身份证放在感应区上面!");
                 return false;
             }
-
-            byte[] pbyText = idCardReader.GetBaseText();
-            byte[] pbyPhoto = idCardReader.GetPhoto();
-
-            if (!idTextDecoder.Decode(pbyText))
+            
+            idTextDecoder.IdCardReader = idCardReader;
+            if (!idTextDecoder.Decode())
             {
                 return false;
             }
 
-            if (!idCardReader.WritePhotoFile(DEF_IDPIC_DIR, idTextDecoder.m_strID, pbyPhoto))
+            if (!idCardReader.WritePhotoFile(DEF_IDPIC_DIR, idTextDecoder.m_strID))
             {
                 PromptInfo("提取身份证照片失败!");
                 return false;
             }
-            ShowIDCardInfo(idTextDecoder);
+            mainWin.ShowIDCardInfo(idTextDecoder);
             return true;
         }
 
-        private void ShowIDCardInfo(IDBaseTextDecoder idBaseTextDecoder)
+        public bool LoadIDPhoto()
         {
-            
+            if(bmIDPhoto!= null)
+            {
+                bmIDPhoto.Dispose();
+            }
+            bmIDPhoto = new Bitmap(idCardReader.GetLastIDPhotoFile());
+            return (bmIDPhoto != null);
         }
+
+        public Bitmap GetIDPhoto()
+        {
+            return bmIDPhoto;
+        }
+
+        //闪灯
+        public void FlashLight(int iLight, int dwMs)
+        {
+            const int nCnt = 2;
+            for (int i = 0; i<nCnt; i++)
+            {
+                SwitchLight(iLight, true);
+                JobManager.Sleep(dwMs);
+                SwitchLight(iLight, false);
+            }
+        }
+        
+        //开关灯
+        public void SwitchLight(int iLight, bool bOn)
+        {
+            gateBoardOper.SwitchLight(iLight, bOn);
+        }
+        
+        //先闪后亮
+        public void FlashAndLight(int iLight)
+        {
+            FlashLight(iLight, 200);
+            SwitchLight(iLight, true);
+        }
+
+        public int GetMaxFaceCmpTimes()
+        {
+            return configInfo.MaxRetryFaceCmp;
+        }
+
+        /// <summary>
+        /// 进行人脸对比操作
+        /// </summary>
+        /// <param name="fScore">输出人脸识别分数</param>
+        /// <returns></returns>
+        public bool DoFaceCmp(ref float fScore)
+        {
+            return false;
+        }
+
     }
 }
