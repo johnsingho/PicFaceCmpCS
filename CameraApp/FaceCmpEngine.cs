@@ -8,10 +8,13 @@ namespace CameraApp
 {
     using HWRESULT = System.UInt32;
     using HW_HANDLE = System.IntPtr;
-
-    /// <summary>
-    /// 使用汉王人脸识别库
-    /// </summary>
+    using JohnKit;
+    using System.Drawing;
+    using System.Drawing.Imaging;
+    using System.Drawing.Drawing2D;
+    using System.Diagnostics;/// <summary>
+                             /// 使用汉王人脸识别库
+                             /// </summary>
     public class FaceCmpEngine : IDisposable
     {
         #region HWFaceRecSDK struct
@@ -101,7 +104,7 @@ namespace CameraApp
                             IntPtr pImg,
                             int nImgWidth, int nImgHeight,
                             ref int pnMaxFace,
-                            ref HWFaceInfo pFaceInfo);
+                            ref HWFaceInfo[] pFaceInfo);
 
         //设置是否大头照之类的证件照片。如果确定是证件照，则可以设置iPortrait = 1,否则设为0。
         //设为1则定位较容易。
@@ -151,12 +154,25 @@ namespace CameraApp
         #endregion
 
         #region Const
-        private static readonly int S_OK = 0;
-        private static readonly int S_FAIL = 1;
+        private static readonly uint S_OK = 0;
+        private static readonly uint S_FAIL = 1;
+
+        private static readonly int ID_PHOTO_WID = (102 * 2);
+        private static readonly int ID_PHOTO_HEI = (126 * 2);
+        private static readonly int LIVE_PHOTO_WID = 640;
+        private static readonly int LIVE_PHOTO_HEI = 480;
+
+        private static readonly int MAX_DETECT_FACES = 2;
         #endregion
 
         private HW_HANDLE handleLib=IntPtr.Zero;
+        private PicPixel idPhotoData;
+        private PicPixel livePhotoData;
         
+        //当前现场照片人脸
+        private HWFaceInfo curLiveFaceInfo = new HWFaceInfo();
+        //提取到人脸样本
+        private HWFaceInfo[] detectFaceInfos = new HWFaceInfo[MAX_DETECT_FACES];
 
         public bool InitLib()
         {
@@ -167,7 +183,13 @@ namespace CameraApp
                 return false;
             }
             hRes = HWInitial(ref handleLib, strCurdir);
-            return S_OK == hRes;
+            bool bInit = (S_OK == hRes);
+            if(bInit)
+            {
+                idPhotoData = PicPixel.CreatePicPixel(ID_PHOTO_WID, ID_PHOTO_HEI);
+                livePhotoData = PicPixel.CreatePicPixel(ID_PHOTO_WID, ID_PHOTO_HEI);
+            }
+            return bInit;
         }
 
         public void Dispose()
@@ -178,9 +200,204 @@ namespace CameraApp
                 handleLib = IntPtr.Zero;
             }
             HWReleaseD();
+            if(idPhotoData!=null)
+            {
+                PicPixel.DeletePicPixel(ref idPhotoData);                
+            }
+            if (livePhotoData != null)
+            {
+                PicPixel.DeletePicPixel(ref livePhotoData);
+            }
         }
 
+        //像素数据
+        internal class PicPixel
+        {
+            internal int width;
+            internal int height;
+            internal IntPtr pixel;
+
+            public static PicPixel CreatePicPixel(int nW, int nH)
+            {
+                PicPixel pPix = new PicPixel();
+                pPix.pixel = Marshal.AllocHGlobal(nW*nH);
+                pPix.width = nW;
+                pPix.height = nH;
+                return pPix;
+            }
+
+            public static void DeletePicPixel(ref PicPixel pPicPixel)
+            {
+                if (pPicPixel!=null)
+                {
+                    Marshal.FreeHGlobal(pPicPixel.pixel);
+                    pPicPixel.pixel = IntPtr.Zero;
+                    pPicPixel.width = 0;
+                    pPicPixel.height = 0;
+                }
+                pPicPixel = null;
+            }
+        }
+
+        //进行一对一对比
+        public float CompareAFace(float fInitFaceCmpRate, int iPorttrail)
+        {
+            float fScore = fInitFaceCmpRate;
+            int iFtrSize = 0;
+            HWGetFeatureSize(handleLib, ref iFtrSize);
+
+            IntPtr pbFtrID = Marshal.AllocHGlobal(iFtrSize);
+            IntPtr pbFtrLiveFace = Marshal.AllocHGlobal(iFtrSize);
+
+            //如果确定是证件照，可以设Portrait= 1， 否则设Portrait = 0
+            HWSetPortrait(handleLib, iPorttrail);
+
+            int iMaxFace = 1;
+            HWFaceInfo[] idFaceInfo=new HWFaceInfo[iMaxFace];
+            //找身份证上的人脸
+            HWRESULT iRst = HWDetectFaceKeyPoints(handleLib, idPhotoData.pixel, idPhotoData.width, idPhotoData.height, ref iMaxFace, ref idFaceInfo);
+            if (iRst != S_OK)
+            {
+                Marshal.FreeHGlobal(pbFtrID);
+                Marshal.FreeHGlobal(pbFtrLiveFace);
+                return 0.0F;
+            }
+            if (S_OK != HWExtractFeature(handleLib, idPhotoData.pixel, idPhotoData.width, idPhotoData.height, ref idFaceInfo[0], pbFtrID))
+            {
+                Marshal.FreeHGlobal(pbFtrID);
+                Marshal.FreeHGlobal(pbFtrLiveFace);
+                return 0.0F;
+            }
+
+            //找出现场照片上的人脸
+            if (S_OK != HWExtractFeature(handleLib, livePhotoData.pixel, livePhotoData.width, livePhotoData.height, ref curLiveFaceInfo, pbFtrLiveFace))
+            {
+                Marshal.FreeHGlobal(pbFtrID);
+                Marshal.FreeHGlobal(pbFtrLiveFace);
+                return 0.0F;
+            }
+
+            WinCall.TraceMessage("***HWExtractFeature all ok\n");
+            HWCompareFeature(handleLib, pbFtrID, pbFtrLiveFace, ref fScore);
+
+            Marshal.FreeHGlobal(pbFtrID);
+            Marshal.FreeHGlobal(pbFtrLiveFace);
+            return fScore;
+        }
+
+        internal void GetLivePhoto(Bitmap bmCur)
+        {
+            GetGrayPixel(livePhotoData, bmCur);
+        }
+        internal void GetIDPhoto(Bitmap bmID)
+        {
+            GetGrayPixel(idPhotoData, bmID);
+        }
+
+        private void GetGrayPixel(PicPixel pPix, Bitmap bmCur)
+        {
+            using (Bitmap bmTemp = BitmapScale(bmCur, LIVE_PHOTO_WID, LIVE_PHOTO_HEI))
+            {
+                using (Bitmap bmGrapy = BitmapConvetGray(bmTemp))
+                {
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        bmGrapy.Save(ms, bmGrapy.RawFormat);
+                        byte[] byData = ms.GetBuffer();
+                        Debug.Assert((pPix.width * pPix.height >= byData.Length), "灰度缓冲区有问题");
+                        Marshal.Copy(byData, 0, pPix.pixel, byData.Length);
+                    }
+                }
+            }            
+        }
+
+        public static Bitmap BitmapConvetGray(Bitmap img)
+        {   
+            int h = img.Height;
+            int w = img.Width;
+            int gray = 0;
+
+            Bitmap bmpOut = new Bitmap(w, h, PixelFormat.Format24bppRgb);
+            BitmapData dataIn = img.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            BitmapData dataOut = bmpOut.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+
+            unsafe
+            {
+                byte* pIn = (byte*)(dataIn.Scan0.ToPointer());
+                byte* pOut = (byte*)(dataOut.Scan0.ToPointer());
+
+                for (int y = 0; y < dataIn.Height; y++)
+                {
+                    for (int x = 0; x < dataIn.Width; x++)
+                    {
+                        //gray = (pIn[0] * 19595 + pIn[1] * 38469 + pIn[2] * 7472) >> 16;
+                        gray = (pIn[0] * 299 + pIn[1] * 587 + pIn[2] * 114 + 500) / 1000;
+                        pOut[0] = (byte)gray;
+                        pOut[1] = (byte)gray;
+                        pOut[2] = (byte)gray;
+                        pIn += 3; pOut += 3;
+                    }
+                    pIn += dataIn.Stride - dataIn.Width * 3;
+                    pOut += dataOut.Stride - dataOut.Width * 3;
+                }
+            }
+            bmpOut.UnlockBits(dataOut);
+            img.UnlockBits(dataIn);
+            return bmpOut;
+        }
+
+        private static Bitmap BitmapScale(Bitmap img, int wid, int hei)
+        {
+            Bitmap tarBitmap = new Bitmap(wid, hei);
+            using (Graphics bmpGraphics = Graphics.FromImage(tarBitmap))
+            {
+                // set Drawing Quality
+                bmpGraphics.InterpolationMode = InterpolationMode.High;
+                bmpGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                Rectangle compressionRectangle = new Rectangle(0, 0, wid, hei);
+                bmpGraphics.DrawImage(img, compressionRectangle);
+            }
+            return tarBitmap;
+        }
+
+        internal bool DetectLivePhoto()
+        {
+            int iMaxFace = MAX_DETECT_FACES;
+
+            HWRESULT iRst = S_FAIL;
+            iRst = HWDetectFaceKeyPoints(handleLib, livePhotoData.pixel, livePhotoData.width, livePhotoData.height, ref iMaxFace, ref detectFaceInfos);
+            bool bValid = (S_OK == iRst);
+            if (bValid)
+            {
+                if (iMaxFace > 1)
+                {
+                    string str = string.Format("***CFaceDetect::DetectLiveFace(), Faces={0}", iMaxFace);
+                    WinCall.TraceMessage(str);
+                }
+                for (int i = 0; i < iMaxFace; i++)
+                {
+                    HWFaceInfo face = detectFaceInfos[i];
+                    int nMaxH = curLiveFaceInfo.m_FaceRect.bottom - curLiveFaceInfo.m_FaceRect.top;
+                    int nMaxW = curLiveFaceInfo.m_FaceRect.right - curLiveFaceInfo.m_FaceRect.left;
+                    int nCurH = face.m_FaceRect.bottom - face.m_FaceRect.top;
+                    int nCurW = face.m_FaceRect.right - face.m_FaceRect.left;
+                    if (nCurW * nCurH > nMaxW * nMaxH)
+                    {
+                        curLiveFaceInfo = face;
+                    }
+                }
+            }
+            return bValid;
+        }
+
+        internal HWFaceInfo GetLiveFaceInfo()
+        {
+            return curLiveFaceInfo;
+        }
+
+
         //-----------------------------
-        
+
     }
 }

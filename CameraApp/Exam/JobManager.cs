@@ -15,8 +15,8 @@ namespace CameraApp.Exam
         public static readonly HandlerBase sHandlerException = new HandlerException();
         public static readonly HandlerBase sHandlerReadIDCard = new HandlerReadIDCard();
         public static readonly HandlerBase sHandlerFaceCmp = new HandlerFaceCmp();
-
-        public static readonly HandlerBase sHandlerTicketCheck = sHandlerTest; //!todo        
+        public static readonly HandlerBase sHandlerTicketCheck = new HandlerTicketCheck();
+        public static readonly HandlerBase sHandlerOpenGate = new HandlerOpenGate();
 
         #region MainCode
         public void doWork(object pData)
@@ -36,7 +36,7 @@ namespace CameraApp.Exam
             pHandler.PreDo(pData);
         }
 
-        private HandlerBase m_pCurHandler;
+        private HandlerBase m_pCurHandler;        
         #endregion
     }
 

@@ -37,6 +37,8 @@ namespace CameraApp
             this.tickGifBox = new CNSpinner.ProgressSpinner();
             this.tickPicCtrl = new CameraApp.PicCtrl();
             this.idCardPicCtrl = new CameraApp.PicCtrl();
+            this.livePicCtrl = new CameraApp.PicCtrl();
+            this.lblTimer = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblInfo
@@ -103,6 +105,26 @@ namespace CameraApp
             this.idCardPicCtrl.UseWaitCursor = true;
             this.idCardPicCtrl.Visible = false;
             // 
+            // livePicCtrl
+            // 
+            this.livePicCtrl.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.livePicCtrl.Location = new System.Drawing.Point(306, 88);
+            this.livePicCtrl.Name = "livePicCtrl";
+            this.livePicCtrl.Size = new System.Drawing.Size(420, 335);
+            this.livePicCtrl.TabIndex = 6;
+            this.livePicCtrl.UseWaitCursor = true;
+            // 
+            // lblTimer
+            // 
+            this.lblTimer.BackColor = System.Drawing.Color.Transparent;
+            this.lblTimer.Font = new System.Drawing.Font("Microsoft YaHei", 13F);
+            this.lblTimer.ForeColor = System.Drawing.SystemColors.Control;
+            this.lblTimer.Location = new System.Drawing.Point(701, 9);
+            this.lblTimer.Name = "lblTimer";
+            this.lblTimer.Size = new System.Drawing.Size(311, 26);
+            this.lblTimer.TabIndex = 7;
+            this.lblTimer.Text = "2016年3月20日 星期日 09:40:40";
+            // 
             // MainWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -111,6 +133,8 @@ namespace CameraApp
             this.BackgroundImage = global::CameraApp.Properties.Resources.bg;
             this.ClientSize = new System.Drawing.Size(1024, 768);
             this.ControlBox = false;
+            this.Controls.Add(this.lblTimer);
+            this.Controls.Add(this.livePicCtrl);
             this.Controls.Add(this.btnTestExit);
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.tickGifBox);
@@ -140,6 +164,8 @@ namespace CameraApp
         private CNSpinner.ProgressSpinner tickGifBox;
         private PicCtrl idCardPicCtrl;
         private CNSpinner.ProgressSpinner idCardGifBox;
+        private PicCtrl livePicCtrl;
+        private System.Windows.Forms.Label lblTimer;
     }
 }
 

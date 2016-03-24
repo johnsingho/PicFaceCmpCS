@@ -27,7 +27,6 @@ namespace CameraApp.Exam
 
             detector.SwitchLight(2, false);
             detector.SwitchLight(3, false);
-
             //pDlg->KeepCompareInfo(fScore);
 
             if (bCmp)

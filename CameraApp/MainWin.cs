@@ -14,25 +14,42 @@ namespace CameraApp
 {
     public partial class MainWin : Form
     {
-        private FaceDetect faceDetect=new FaceDetect();
-
+        private FaceDetect faceDetect = null;
         private static readonly Color DefPromptClr = Color.Blue;
+        private Timer timerRefreshClock;
 
         delegate void SetInfoTextCallback(string text, int nFontHeight);
 
 
         public MainWin()
         {
-            InitializeComponent();
-            LoadConfigInfo();
+            InitializeComponent();            
             InitVars();
+            LoadConfigInfo();
             InitEnv();
+            InitClock();
 
 #if !DEBUG
             //仅用于调试
             btnTestExit.Visible = false;
 #endif
         }
+
+        private void InitClock()
+        {
+            timerRefreshClock = new Timer();
+            timerRefreshClock.Tick += new EventHandler(TimerRefreshClock);
+            
+            timerRefreshClock.Interval = 1000;
+            timerRefreshClock.Start();
+        }
+
+        private void TimerRefreshClock(object sender, EventArgs e)
+        {
+            string str = DateTime.Now.ToString("yyyy年MM月dd日 HH:mm:ss dddd");
+            lblTimer.Text = str;
+        }
+
         private void InitEnv()
         {
             faceDetect.BindForm(this);
@@ -52,18 +69,20 @@ namespace CameraApp
         }
 
         private bool LoadConfigInfo()
-        {
+        {            
             return faceDetect.LoadConfigInfo();
         }
 
         private bool InitVars()
         {
             PromptInfo("系统正在初始化，请稍候...");
+            faceDetect = new FaceDetect();
             return false;
         }
 
         private void OnFormClosed(object sender, FormClosedEventArgs e)
         {
+            timerRefreshClock.Stop();
             faceDetect.DoExit();
         }
 
@@ -189,7 +208,7 @@ namespace CameraApp
 
         private static void DrawIDPic(Graphics g, Bitmap bitmap, int x, int y, int nIDPicWid, int nIDPicHei)
         {
-            if (bitmap != null) { return; }
+            if (bitmap == null) { return; }
             g.DrawImage(bitmap, new Rectangle(x, y, nIDPicWid, nIDPicHei));
         }
 
@@ -212,6 +231,27 @@ namespace CameraApp
         public void ShowIDCardInfo(IDBaseTextDecoder idTextDecoder)
         {
             this.Invoke(new MyFuncDelegate1(DoShowIDCardInfo), idTextDecoder);
+        }
+
+        private void DoRefreshLiveCam(object objData)
+        {
+            Bitmap bmLive = (Bitmap)objData;
+            if (bmLive == null) { return; }
+            using (Graphics g = this.livePicCtrl.CreateGraphics())
+            {
+                //!todo 可能需要缩放
+                g.DrawImage(bmLive, new Point(0, 0));
+            }
+            bmLive.Dispose();
+        }
+        public void RefreshLiveCam(Bitmap bitmap)
+        {
+            this.Invoke(new MyFuncDelegate1(DoRefreshLiveCam), bitmap);
+        }
+
+        public Control GetLivePicCtrl()
+        {
+            return livePicCtrl;
         }
     }
 }

@@ -8,6 +8,9 @@ using CameraApp.MyCap;
 using JohnKit;
 using System.Media;
 using System.Drawing;
+using System.Drawing.Imaging;
+using ZBar;
+using System.Collections.Generic;
 
 namespace CameraApp
 {
@@ -43,6 +46,9 @@ namespace CameraApp
         private ManualResetEvent stopMainEvent = null;
         private Thread thMainThread=null;
 
+        private ManualResetEvent stopLiveCamEvent=null;
+        private Thread thLiveCamThread = null;
+
         #region 提示音相关
         private SoundPlayer voiceInitOK;
         private SoundPlayer voiceInitFail;
@@ -61,7 +67,8 @@ namespace CameraApp
         //身份证照片
         private Bitmap bmIDPhoto = null;
         //现场照片
-        private Bitmap bmLivePhoto = null;        
+        private Bitmap bmLivePhoto = null;
+        
         #endregion
 
 
@@ -187,6 +194,7 @@ namespace CameraApp
                 string str = string.Format("欢迎使用{0}", ConstValue.DEF_SYS_NAME);
                 PromptInfo(str);
                 StartMainThread();
+                StartLiveCamThread();
                 PlayVoice(ConstValue.VOICE_INIT_OK);
             }
             else
@@ -289,6 +297,10 @@ namespace CameraApp
         {
             ThreadBoolRet thRet = (ThreadBoolRet)o;
             bool bOpen = gateBoardOper.TryOpenCOM(configInfo.GateBoardCOM);
+            if (bOpen)
+            {
+                gateBoardOper.TurnoffAllLight();
+            }
             thRet.bResult = bOpen;
         }
 
@@ -336,6 +348,9 @@ namespace CameraApp
             StopMainThread();
             WaitForMainThreadStop();
 
+            StopLiveCamThread();
+            WaitForLiveCamThreadStop();
+
             idCardReader.Dispose();
             faceCmpEngine.Dispose();
 
@@ -362,7 +377,7 @@ namespace CameraApp
             this.tickCamOper = tickCamOper;
         }
 
-        
+        #region MainThread        
         private void StartMainThread()
         {
             stopMainEvent = new ManualResetEvent(false);
@@ -382,7 +397,6 @@ namespace CameraApp
                 stopMainEvent.Set();
             }
         }
-
         private void WaitForMainThreadStop()
         {
             if (thMainThread != null)
@@ -407,6 +421,86 @@ namespace CameraApp
                 jm.doWork(this);
             }
         }
+        #endregion
+
+        #region StartLiveCamThread
+        private void StartLiveCamThread()
+        {
+            stopLiveCamEvent = new ManualResetEvent(false);
+            thLiveCamThread = new Thread(FuncLiveCamShow)
+            {
+                Name = "LiveCamShow",
+                IsBackground = true
+            };
+            thLiveCamThread.Start();
+        }
+        private void StopLiveCamThread()
+        {
+            if (thLiveCamThread != null)
+            {
+                stopLiveCamEvent.Set();
+            }
+        }
+        private void WaitForLiveCamThreadStop()
+        {
+            if (thLiveCamThread != null)
+            {
+                thLiveCamThread.Join();
+                thLiveCamThread = null;
+
+                stopLiveCamEvent.Close();
+                stopLiveCamEvent = null;
+            }
+        }
+        private void FuncLiveCamShow()
+        {
+            if (!indusCamOper.Play())
+            {
+                WinCall.TraceMessage("***indusCamOper.Play() error");
+                return;
+            }
+            int nWaitMS = JobManager.IDLE_WAIT_MS * 2;
+            while (!stopLiveCamEvent.WaitOne(nWaitMS, true))
+            {
+                //live photo
+                using (Bitmap bmCur = indusCamOper.QueryFrame(800))
+                {
+                    Bitmap bmDetect = DetectFace(bmCur);
+                    mainWin.RefreshLiveCam(bmDetect);
+                }
+            }
+            indusCamOper.Stop();
+        }
+
+        /// <summary>
+        /// 使用汉王库来侦测人脸
+        /// 返回画上了框的照片
+        /// </summary>
+        /// <param name="bmCur"></param>
+        /// <returns></returns>
+        private Bitmap DetectFace(Bitmap bmCur)
+        {
+            faceCmpEngine.GetLivePhoto(bmCur);
+            Bitmap bmDetect = (Bitmap)bmCur.Clone();
+            if (faceCmpEngine.DetectLivePhoto())
+            {                
+                Size szPicCtrl = mainWin.GetLivePicCtrl().Size;
+                float fWS = (float)bmCur.Width /(float)szPicCtrl.Width;
+                float fHS = (float)bmCur.Height /(float)szPicCtrl.Height;
+                var curLiveFace = faceCmpEngine.GetLiveFaceInfo();
+                float rX = curLiveFace.m_FaceRect.left * fWS;
+                float rY = curLiveFace.m_FaceRect.top * fHS;
+                float rW = (curLiveFace.m_FaceRect.right - curLiveFace.m_FaceRect.left) * fWS;
+                float rH = (curLiveFace.m_FaceRect.bottom - curLiveFace.m_FaceRect.top) * fHS;
+                //如果找到人脸的话，画个框
+                using (Graphics g = Graphics.FromImage(bmDetect))
+                {
+                    g.DrawRectangle(new Pen(Color.Red, 2), rX, rY, rW, rH);
+                }
+            }
+            return bmDetect;
+        }
+        #endregion
 
         //重置身份证信息显示
         public void ResetIDCardInfo()
@@ -483,7 +577,10 @@ namespace CameraApp
         {
             return configInfo.MaxRetryFaceCmp;
         }
-
+        public int GetMaxTicketChkTimes()
+        {
+            return configInfo.MaxRetryTicketChk;
+        }
         /// <summary>
         /// 进行人脸对比操作
         /// </summary>
@@ -491,8 +588,63 @@ namespace CameraApp
         /// <returns></returns>
         public bool DoFaceCmp(ref float fScore)
         {
-            return false;
+            float fScmp = 0.0F;
+            //两个图片的比对。 并且保存特征.            
+            fScmp = faceCmpEngine.CompareAFace(configInfo.InitFaceCmpRate, 0);
+            fScmp = fScmp * 100.0F;
+
+#if FACE_ZUOBI
+            //人脸识别分数作弊
+            if (fScmp > 0.0000)
+            {
+                fScmp += 9.5786;
+            }
+#endif
+            string strScore = string.Format("人脸识别相似度：{0:F3}%", fScmp);
+            WinCall.TraceMessage(strScore);
+            PromptInfo(strScore);
+
+            fScore = fScmp;
+            return (fScmp >= configInfo.ReqFaceCmpScore);
         }
 
+        //识别二维码
+        public bool DoCheckTicket(ref string strQrCode)
+        {            
+            IntPtr bmData = tickCamOper.Click();
+            if (bmData == IntPtr.Zero)
+            {
+                return false;
+            }
+            strQrCode = string.Empty;
+            using (Bitmap b = new Bitmap(tickCamOper.Width, tickCamOper.Height, tickCamOper.Stride, PixelFormat.Format24bppRgb, bmData))
+            {
+                using (Bitmap bmGray = FaceCmpEngine.BitmapConvetGray(b))
+                {
+                    ImageScanner scanner = new ImageScanner();
+                    scanner.SetConfiguration(SymbolType.None, Config.Enable, 1);
+
+                    List<Symbol> symbols = scanner.Scan(bmGray);
+                    foreach(var sym in symbols)
+                    {
+                        var symType = sym.GetType();
+                        if (!string.IsNullOrEmpty(sym.Data))
+                        {
+                            strQrCode = sym.Data;
+                            break; //只取一个结果
+                        }
+                    }
+                }
+            }
+            return (false == string.IsNullOrEmpty(strQrCode));
+        }
+
+        //放行
+        public void LetGo()
+        {
+            gateBoardOper.OpenGate(1);
+            PlayVoice(ConstValue.VOICE_PASS);
+            PromptInfo("验证成功。\n祝你旅途愉快！");
+        }
     }
 }

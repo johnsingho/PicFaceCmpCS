@@ -19,7 +19,6 @@ namespace CameraApp
     {
         private readonly int LANG=1;
         private CameraHandle m_hCamera = 0;
-        private Bitmap bmCur=null;
 
         public bool Init()
         {
@@ -70,38 +69,37 @@ namespace CameraApp
             return true;
         }
 
-        bool Play()
+        public bool Play()
         {
             return CameraSdkStatus.CAMERA_STATUS_SUCCESS == MvApi.CameraPlay(m_hCamera);
         }
 
-        bool Pause()
+        public bool Pause()
         {
             return CameraSdkStatus.CAMERA_STATUS_SUCCESS == MvApi.CameraPause(m_hCamera);
         }
+        public bool Stop()
+        {
+            return CameraSdkStatus.CAMERA_STATUS_SUCCESS == MvApi.CameraStop(m_hCamera);
+        }
 
-
-        public bool QueryFrame(uint wTimes=1000 )
+        public Bitmap QueryFrame(uint wTimes=1000 )
         {
             int nWidth = 0;
             int nHeight = 0;
             IntPtr pPicBuf = (IntPtr) MvApi.CameraGetImageBufferEx(m_hCamera, ref nWidth, ref nHeight, wTimes);
-            if (pPicBuf==IntPtr.Zero) { return false; }
+            if (pPicBuf==IntPtr.Zero) { return null; }
 
             int nDataLen = nWidth*nHeight*3;
             byte[] byPic = new byte[nDataLen];
             Marshal.Copy(pPicBuf, byPic, 0, nDataLen);
 
-            if (bmCur != null)
-            {
-                bmCur.Dispose();
-                bmCur = null;
-            }
+            Bitmap bmCur = null;
             using (MemoryStream ms1 = new MemoryStream(byPic))
             {
                 bmCur = (Bitmap)Image.FromStream(ms1);
             }
-            return (bmCur != null);
+            return bmCur;
 
             ////////////////////////////
             //if (nWidth != m_curFrameSize.width || nHeight != m_curFrameSize.height)
@@ -120,8 +118,5 @@ namespace CameraApp
             //memcpy(m_pFrame->imageData, pPicBuf, m_pFrame->imageSize);
             //return m_pFrame;
         }
-
-
-
     }
 }

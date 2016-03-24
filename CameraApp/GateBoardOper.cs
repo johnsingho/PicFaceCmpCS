@@ -247,7 +247,7 @@ namespace CameraApp
             return bOk;
         }
 
-        bool TurnoffAllLight()
+        public bool TurnoffAllLight()
         {
             foreach (ushort cmd in g_ArrLightCmdOpen)
             {
@@ -258,7 +258,7 @@ namespace CameraApp
 
         // iGate=0右闸门
         // iGate=1左闸门
-        bool OpenGate(int iGate)
+        public bool OpenGate(int iGate)
         {
             bool bOk = false;
             int nMax = g_ArrGeteOpen.Length;
@@ -273,7 +273,6 @@ namespace CameraApp
             }
             return bOk;
         }
-
-
+        
     }
 }
