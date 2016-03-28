@@ -1,0 +1,12 @@
+<?xml version='1.0'?>
+<Obfuscator>
+  <Var name="InPath" value=".\bin\Release" />
+  <Var name="OutPath" value=".\publish" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="KeyFile" value=".\CameraApp.snk" />
+
+  <Module file="$(InPath)\CameraApp.exe" />
+  <!-- <Module file="$(InPath)\CNSpinner.dll" /> -->
+  <!-- <Module file="$(InPath)\libzbar-cil.dll" /> -->
+  <!-- <Module file="$(InPath)\DirectShowLib-2005.dll" /> -->
+</Obfuscator>

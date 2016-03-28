@@ -19,6 +19,7 @@ namespace CameraApp
     {
         private readonly int LANG=1;
         private CameraHandle m_hCamera = 0;
+        private IntPtr m_ImageBufferSnapshot;
 
         public bool Init()
         {
@@ -34,11 +35,8 @@ namespace CameraApp
                 MvApi.CameraUnInit(m_hCamera);
             }
 
-            //if (m_pFrame)
-            //{
-            //    cvReleaseImage(&m_pFrame);
-            //    m_pFrame = NULL;
-            //}
+            Marshal.FreeHGlobal(m_ImageBufferSnapshot);
+            m_ImageBufferSnapshot = IntPtr.Zero;
         }
 
 
@@ -65,7 +63,7 @@ namespace CameraApp
 
             //Get properties description for this camera.
             MvApi.CameraGetCapability(m_hCamera, out sCameraInfo);
-
+            m_ImageBufferSnapshot = Marshal.AllocHGlobal(sCameraInfo.sResolutionRange.iWidthMax * sCameraInfo.sResolutionRange.iHeightMax * 3 + 1024);
             return true;
         }
 
@@ -83,40 +81,64 @@ namespace CameraApp
             return CameraSdkStatus.CAMERA_STATUS_SUCCESS == MvApi.CameraStop(m_hCamera);
         }
 
-        public Bitmap QueryFrame(uint wTimes=1000 )
+        public Bitmap QueryFrame(uint wTimes = 1000)
         {
-            int nWidth = 0;
-            int nHeight = 0;
-            IntPtr pPicBuf = (IntPtr) MvApi.CameraGetImageBufferEx(m_hCamera, ref nWidth, ref nHeight, wTimes);
-            if (pPicBuf==IntPtr.Zero) { return null; }
-
-            int nDataLen = nWidth*nHeight*3;
-            byte[] byPic = new byte[nDataLen];
-            Marshal.Copy(pPicBuf, byPic, 0, nDataLen);
-
-            Bitmap bmCur = null;
-            using (MemoryStream ms1 = new MemoryStream(byPic))
+            tSdkFrameHead tFrameHead;
+            IntPtr uRawBuffer;
+            Bitmap bmFrame = null;
+            if (MvApi.CameraSnapToBuffer(m_hCamera, out tFrameHead, out uRawBuffer, 800) == CameraSdkStatus.CAMERA_STATUS_SUCCESS)
             {
-                bmCur = (Bitmap)Image.FromStream(ms1);
+                //将相机输出的原始数据转换为RGB格式到内存m_ImageBufferSnapshot中
+                MvApi.CameraImageProcess(m_hCamera, uRawBuffer, m_ImageBufferSnapshot, ref tFrameHead);
+                MvApi.CameraReleaseImageBuffer(m_hCamera, uRawBuffer);
+                Image img = MvApi.CSharpImageFromFrame(m_ImageBufferSnapshot, ref tFrameHead);
+                bmFrame = (Bitmap) img;
             }
-            return bmCur;
-
-            ////////////////////////////
-            //if (nWidth != m_curFrameSize.width || nHeight != m_curFrameSize.height)
-            //{
-            //    if (m_pFrame)
-            //    {
-            //        cvReleaseImage(&m_pFrame);
-            //    }
-            //    m_curFrameSize = cvSize(nWidth, nHeight);
-            //    m_pFrame = cvCreateImage(m_curFrameSize, IPL_DEPTH_8U, 3);
-            //}
-            //if (!m_pFrame)
-            //{
-            //    return NULL;
-            //}
-            //memcpy(m_pFrame->imageData, pPicBuf, m_pFrame->imageSize);
-            //return m_pFrame;
+            return bmFrame;
         }
+
+        //public Bitmap QueryFrame(uint wTimes=1000 )
+        //{
+        //    int nWidth = 0;
+        //    int nHeight = 0;
+        //    IntPtr pPicBuf = (IntPtr) MvApi.CameraGetImageBufferEx(m_hCamera, ref nWidth, ref nHeight, wTimes);
+        //    if (pPicBuf==IntPtr.Zero) { return null; }
+
+        //    int nDataLen = nWidth*nHeight*3;
+        //    byte[] byPic = new byte[nDataLen];
+        //    Marshal.Copy(pPicBuf, byPic, 0, nDataLen);
+
+        //    Bitmap bmCur = null;
+        //    using (MemoryStream ms1 = new MemoryStream(byPic))
+        //    {
+        //        try
+        //        {
+        //            var img = Image.FromStream(ms1); //! todo
+        //            bmCur = (Bitmap)img;
+        //        }
+        //        catch (ArgumentException)
+        //        {
+        //            bmCur = null;
+        //        }
+        //    }
+        //    return bmCur;
+
+        //    ////////////////////////////
+        //    //if (nWidth != m_curFrameSize.width || nHeight != m_curFrameSize.height)
+        //    //{
+        //    //    if (m_pFrame)
+        //    //    {
+        //    //        cvReleaseImage(&m_pFrame);
+        //    //    }
+        //    //    m_curFrameSize = cvSize(nWidth, nHeight);
+        //    //    m_pFrame = cvCreateImage(m_curFrameSize, IPL_DEPTH_8U, 3);
+        //    //}
+        //    //if (!m_pFrame)
+        //    //{
+        //    //    return NULL;
+        //    //}
+        //    //memcpy(m_pFrame->imageData, pPicBuf, m_pFrame->imageSize);
+        //    //return m_pFrame;
+        //}
     }
 }

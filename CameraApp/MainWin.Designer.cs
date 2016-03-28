@@ -52,7 +52,6 @@ namespace CameraApp
             this.lblInfo.TabIndex = 1;
             this.lblInfo.Text = "Initi初始化....";
             this.lblInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblInfo.UseWaitCursor = true;
             // 
             // btnTestExit
             // 
@@ -62,7 +61,6 @@ namespace CameraApp
             this.btnTestExit.TabIndex = 2;
             this.btnTestExit.Text = "Test Exit";
             this.btnTestExit.UseVisualStyleBackColor = true;
-            this.btnTestExit.UseWaitCursor = true;
             this.btnTestExit.Click += new System.EventHandler(this.btnTestExit_Click);
             // 
             // idCardGifBox
@@ -73,7 +71,6 @@ namespace CameraApp
             this.idCardGifBox.Name = "idCardGifBox";
             this.idCardGifBox.Size = new System.Drawing.Size(285, 257);
             this.idCardGifBox.TabIndex = 5;
-            this.idCardGifBox.UseWaitCursor = true;
             // 
             // tickGifBox
             // 
@@ -83,7 +80,6 @@ namespace CameraApp
             this.tickGifBox.Name = "tickGifBox";
             this.tickGifBox.Size = new System.Drawing.Size(260, 195);
             this.tickGifBox.TabIndex = 3;
-            this.tickGifBox.UseWaitCursor = true;
             // 
             // tickPicCtrl
             // 
@@ -92,7 +88,6 @@ namespace CameraApp
             this.tickPicCtrl.Name = "tickPicCtrl";
             this.tickPicCtrl.Size = new System.Drawing.Size(260, 195);
             this.tickPicCtrl.TabIndex = 0;
-            this.tickPicCtrl.UseWaitCursor = true;
             this.tickPicCtrl.Visible = false;
             // 
             // idCardPicCtrl
@@ -102,7 +97,6 @@ namespace CameraApp
             this.idCardPicCtrl.Name = "idCardPicCtrl";
             this.idCardPicCtrl.Size = new System.Drawing.Size(235, 167);
             this.idCardPicCtrl.TabIndex = 4;
-            this.idCardPicCtrl.UseWaitCursor = true;
             this.idCardPicCtrl.Visible = false;
             // 
             // livePicCtrl
@@ -112,7 +106,6 @@ namespace CameraApp
             this.livePicCtrl.Name = "livePicCtrl";
             this.livePicCtrl.Size = new System.Drawing.Size(420, 335);
             this.livePicCtrl.TabIndex = 6;
-            this.livePicCtrl.UseWaitCursor = true;
             // 
             // lblTimer
             // 
@@ -149,7 +142,6 @@ namespace CameraApp
             this.Name = "MainWin";
             this.Text = "MainWin";
             this.TopMost = true;
-            this.UseWaitCursor = true;
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDown);
             this.ResumeLayout(false);

@@ -249,7 +249,7 @@ namespace CameraApp
 
         public bool TurnoffAllLight()
         {
-            foreach (ushort cmd in g_ArrLightCmdOpen)
+            foreach (ushort cmd in g_ArrLightCmdClose)
             {
                 SendCommandNoReturn(LOCK_CMD_LED, cmd);
             }

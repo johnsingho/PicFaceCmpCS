@@ -12,9 +12,11 @@ namespace CameraApp
     using System.Drawing;
     using System.Drawing.Imaging;
     using System.Drawing.Drawing2D;
-    using System.Diagnostics;/// <summary>
-                             /// 使用汉王人脸识别库
-                             /// </summary>
+    using System.Diagnostics;
+    
+    /// <summary>
+    /// 使用汉王人脸识别库
+    /// </summary>
     public class FaceCmpEngine : IDisposable
     {
         #region HWFaceRecSDK struct
@@ -66,7 +68,7 @@ namespace CameraApp
         //程序加载后运行一次，先于HWInitial运行
         //return: S_OK, S_FAIL
         [DllImport("HWcompare.dll", CallingConvention=CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern HWRESULT HWInitialD([MarshalAs(UnmanagedType.LPStr)]string strName);
+        public static extern HWRESULT HWInitialD([MarshalAs(UnmanagedType.LPStr)]string strName);        
 
         //释放核心
         //程序退出前运行一次
@@ -87,9 +89,7 @@ namespace CameraApp
         public static extern HWRESULT HWRelease(ref HW_HANDLE pHandle);
 
         /**************************************************
-
             人脸定位
-
         *************************************************/
         //人脸定位
         //Handle [input] HWInitial初始化好的Handle
@@ -302,7 +302,8 @@ namespace CameraApp
                 {
                     using (MemoryStream ms = new MemoryStream())
                     {
-                        bmGrapy.Save(ms, bmGrapy.RawFormat);
+                        //bmGrapy.Save(ms, bmGrapy.RawFormat);
+                        bmGrapy.Save(ms, ImageFormat.Bmp);
                         byte[] byData = ms.GetBuffer();
                         Debug.Assert((pPix.width * pPix.height >= byData.Length), "灰度缓冲区有问题");
                         Marshal.Copy(byData, 0, pPix.pixel, byData.Length);
@@ -348,6 +349,10 @@ namespace CameraApp
 
         private static Bitmap BitmapScale(Bitmap img, int wid, int hei)
         {
+            if (img == null)
+            {
+                return null;
+            }
             Bitmap tarBitmap = new Bitmap(wid, hei);
             using (Graphics bmpGraphics = Graphics.FromImage(tarBitmap))
             {
@@ -395,9 +400,7 @@ namespace CameraApp
         {
             return curLiveFaceInfo;
         }
-
-
-        //-----------------------------
+        
 
     }
 }

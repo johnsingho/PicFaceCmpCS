@@ -83,7 +83,7 @@ namespace CameraApp
         private void OnFormClosed(object sender, FormClosedEventArgs e)
         {
             timerRefreshClock.Stop();
-            faceDetect.DoExit();
+            faceDetect.Dispose();
         }
 
         /// <summary>
@@ -147,6 +147,7 @@ namespace CameraApp
 
         public void CreateTicketCamOper(FaceDetect faceDetect)
         {
+            while (!this.InvokeRequired) {}
             this.Invoke(new MyFuncDelegate1(DoCreateTicketCamOper), faceDetect);
         }
 

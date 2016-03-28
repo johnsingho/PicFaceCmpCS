@@ -116,15 +116,7 @@ namespace CameraApp
         {
             mainWin.PromptError(strErr);
         }
-
-        /// <summary>
-        /// 清退工作
-        /// </summary>
-        public void DoExit()
-        {
-
-        }
-
+                
         /// <summary>
         /// 硬件设备初始化
         /// </summary>
