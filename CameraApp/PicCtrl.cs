@@ -9,12 +9,12 @@ using System.Windows.Forms;
 
 namespace CameraApp
 {
-    public partial class PicCtrl : UserControl
+    public partial class PicCtrl : PictureBox
     {
         public PicCtrl()
         {
             InitializeComponent();
         }
-
+        
     }
 }

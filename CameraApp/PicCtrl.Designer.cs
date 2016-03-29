@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.lblInfo = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             this.SuspendLayout();
             // 
             // lblInfo
@@ -38,7 +39,7 @@
             this.lblInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.lblInfo.Font = new System.Drawing.Font("SimSun", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.lblInfo.ForeColor = System.Drawing.Color.Red;
-            this.lblInfo.Location = new System.Drawing.Point(0, 164);
+            this.lblInfo.Location = new System.Drawing.Point(0, 150);
             this.lblInfo.Name = "lblInfo";
             this.lblInfo.Size = new System.Drawing.Size(64, 16);
             this.lblInfo.TabIndex = 0;
@@ -46,12 +47,12 @@
             // 
             // PicCtrl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.Controls.Add(this.lblInfo);
-            this.Name = "PicCtrl";
             this.Size = new System.Drawing.Size(270, 180);
+            this.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 

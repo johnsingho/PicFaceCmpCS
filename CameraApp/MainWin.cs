@@ -238,10 +238,10 @@ namespace CameraApp
         {
             Bitmap bmLive = (Bitmap)objData;
             if (bmLive == null) { return; }
+            var rect = this.livePicCtrl.ClientRectangle;
             using (Graphics g = this.livePicCtrl.CreateGraphics())
             {
-                //!todo 可能需要缩放
-                g.DrawImage(bmLive, new Point(0, 0));
+                g.DrawImage(bmLive, rect);
             }
             bmLive.Dispose();
         }

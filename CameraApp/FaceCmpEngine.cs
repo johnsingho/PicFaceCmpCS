@@ -104,7 +104,33 @@ namespace CameraApp
                             IntPtr pImg,
                             int nImgWidth, int nImgHeight,
                             ref int pnMaxFace,
-                            ref HWFaceInfo[] pFaceInfo);
+                            IntPtr pFaceInfo);
+
+        public static HWRESULT HWDetectFaceKeyPoints(HW_HANDLE Handle,
+            IntPtr pImg,
+            int nImgWidth, int nImgHeight,
+            ref int pnMaxFace,
+            ref HWFaceInfo[] pFaceInfo)
+        {
+            if (pnMaxFace <= 0)
+            {
+                return S_FAIL;
+            }
+            int nSizeStruct = Marshal.SizeOf(typeof(HWFaceInfo));
+            IntPtr ptr= Marshal.AllocHGlobal(nSizeStruct * pnMaxFace);
+            HWRESULT hr = HWDetectFaceKeyPoints(Handle, pImg, nImgWidth, nImgHeight, ref pnMaxFace, ptr);
+            if (hr == S_OK)
+            {
+                IntPtr ptrData = ptr;
+                for (int i = 0; i < pnMaxFace; i++)
+                {
+                    pFaceInfo[i] = (HWFaceInfo)Marshal.PtrToStructure(ptrData, typeof(HWFaceInfo));
+                    ptrData += nSizeStruct;
+                }
+            }
+            Marshal.FreeHGlobal(ptr);
+            return hr;
+        }
 
         //设置是否大头照之类的证件照片。如果确定是证件照，则可以设置iPortrait = 1,否则设为0。
         //设为1则定位较容易。
@@ -170,7 +196,7 @@ namespace CameraApp
         private PicPixel livePhotoData;
         
         //当前现场照片人脸
-        private HWFaceInfo curLiveFaceInfo = new HWFaceInfo();
+        private HWFaceInfo curLiveFaceInfo;
         //提取到人脸样本
         private HWFaceInfo[] detectFaceInfos = new HWFaceInfo[MAX_DETECT_FACES];
 
@@ -187,7 +213,7 @@ namespace CameraApp
             if(bInit)
             {
                 idPhotoData = PicPixel.CreatePicPixel(ID_PHOTO_WID, ID_PHOTO_HEI);
-                livePhotoData = PicPixel.CreatePicPixel(ID_PHOTO_WID, ID_PHOTO_HEI);
+                livePhotoData = PicPixel.CreatePicPixel(LIVE_PHOTO_WID, LIVE_PHOTO_HEI);
             }
             return bInit;
         }
@@ -296,56 +322,100 @@ namespace CameraApp
 
         private void GetGrayPixel(PicPixel pPix, Bitmap bmCur)
         {
-            using (Bitmap bmTemp = BitmapScale(bmCur, LIVE_PHOTO_WID, LIVE_PHOTO_HEI))
+            int nW = pPix.width;
+            int nH = pPix.height;
+            using (Bitmap bmTemp = BitmapScale(bmCur, nW, nH))
             {
                 using (Bitmap bmGrapy = BitmapConvetGray(bmTemp))
                 {
+#if OLD_BYTE
                     using (MemoryStream ms = new MemoryStream())
                     {
                         //bmGrapy.Save(ms, bmGrapy.RawFormat);
-                        bmGrapy.Save(ms, ImageFormat.Bmp);
+                        bmGrapy.Save(ms, ImageFormat.MemoryBmp);
                         byte[] byData = ms.GetBuffer();
-                        Debug.Assert((pPix.width * pPix.height >= byData.Length), "灰度缓冲区有问题");
+                        int nMaxBuf = pPix.width*pPix.height;
+                        Debug.Assert((nMaxBuf >= byData.Length), "灰度缓冲区有问题"); //! todo
                         Marshal.Copy(byData, 0, pPix.pixel, byData.Length);
                     }
+#else
+                    Rectangle rect = new Rectangle(0,0,nW,nH);
+                    BitmapData dataGray = bmGrapy.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
+                    System.IntPtr ptrGray = dataGray.Scan0;
+                    WinCall.CopyMemory(pPix.pixel, ptrGray, nW*nH);
+                    bmGrapy.UnlockBits(dataGray);
+#endif
                 }
             }            
         }
 
-        public static Bitmap BitmapConvetGray(Bitmap img)
-        {   
-            int h = img.Height;
-            int w = img.Width;
-            int gray = 0;
+        #region convert to gray
+        private static Bitmap CreateGrayscaleImage(int width, int height)
+        {
+            // create new image
+            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+            // set palette to grayscale
+            SetGrayscalePalette(bmp);
+            // return new image
+            return bmp;
 
-            Bitmap bmpOut = new Bitmap(w, h, PixelFormat.Format24bppRgb);
-            BitmapData dataIn = img.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-            BitmapData dataOut = bmpOut.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+        }//#
+        private static void SetGrayscalePalette(Bitmap srcImg)
+        {
+            if (srcImg.PixelFormat != PixelFormat.Format8bppIndexed)
+                throw new ArgumentException();
+            ColorPalette cp = srcImg.Palette;
+            for (int i = 0; i < 256; i++)
+            {
+                cp.Entries[i] = Color.FromArgb(i, i, i);
+            }
+            srcImg.Palette = cp;
+        }
+
+        public static Bitmap BitmapConvetGray(Bitmap srcBitmap)
+        {
+            int width = srcBitmap.Width;
+            int height = srcBitmap.Height;
+            Rectangle rect = new Rectangle(0, 0, width, height);
+
+            BitmapData srcBmData = srcBitmap.LockBits(rect,
+                      ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+
+            Bitmap dstBitmap = CreateGrayscaleImage(width, height);
+            BitmapData dstBmData = dstBitmap.LockBits(rect,
+                      ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
+
+            System.IntPtr srcScan = srcBmData.Scan0;
+            System.IntPtr dstScan = dstBmData.Scan0;
 
             unsafe
             {
-                byte* pIn = (byte*)(dataIn.Scan0.ToPointer());
-                byte* pOut = (byte*)(dataOut.Scan0.ToPointer());
+                byte* srcP = (byte*)srcScan.ToPointer();
+                byte* dstP = (byte*)dstScan.ToPointer();
+                int srcOffset = srcBmData.Stride - width * 3;
+                int dstOffset = dstBmData.Stride - width;
 
-                for (int y = 0; y < dataIn.Height; y++)
+                byte red, green, blue;
+                for (int y = 0; y < height; y++)
                 {
-                    for (int x = 0; x < dataIn.Width; x++)
+                    for (int x = 0; x < width; x++, srcP += 3, dstP++)
                     {
-                        //gray = (pIn[0] * 19595 + pIn[1] * 38469 + pIn[2] * 7472) >> 16;
-                        gray = (pIn[0] * 299 + pIn[1] * 587 + pIn[2] * 114 + 500) / 1000;
-                        pOut[0] = (byte)gray;
-                        pOut[1] = (byte)gray;
-                        pOut[2] = (byte)gray;
-                        pIn += 3; pOut += 3;
+                        blue = srcP[0];
+                        green = srcP[1];
+                        red = srcP[2];
+                        //*dstP = (byte)(.299 * red + .587 * green + .114 * blue);
+                        *dstP = (byte)((red*299 + green*587 + blue*114+500)/1000.0);
                     }
-                    pIn += dataIn.Stride - dataIn.Width * 3;
-                    pOut += dataOut.Stride - dataOut.Width * 3;
+                    srcP += srcOffset;
+                    dstP += dstOffset;
                 }
             }
-            bmpOut.UnlockBits(dataOut);
-            img.UnlockBits(dataIn);
-            return bmpOut;
+
+            srcBitmap.UnlockBits(srcBmData);
+            dstBitmap.UnlockBits(dstBmData);
+            return dstBitmap;
         }
+        #endregion
 
         private static Bitmap BitmapScale(Bitmap img, int wid, int hei)
         {
@@ -383,6 +453,11 @@ namespace CameraApp
                 for (int i = 0; i < iMaxFace; i++)
                 {
                     HWFaceInfo face = detectFaceInfos[i];
+                    if (i == 0)
+                    {
+                        curLiveFaceInfo = face;
+                        continue;
+                    }
                     int nMaxH = curLiveFaceInfo.m_FaceRect.bottom - curLiveFaceInfo.m_FaceRect.top;
                     int nMaxW = curLiveFaceInfo.m_FaceRect.right - curLiveFaceInfo.m_FaceRect.left;
                     int nCurH = face.m_FaceRect.bottom - face.m_FaceRect.top;
@@ -400,7 +475,16 @@ namespace CameraApp
         {
             return curLiveFaceInfo;
         }
-        
 
+
+        public float GetLiveDataWidth()
+        {
+            return livePhotoData.width;
+        }
+
+        public float GetLiveDataHeight()
+        {
+            return livePhotoData.height;
+        }
     }
 }

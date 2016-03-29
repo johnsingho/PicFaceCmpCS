@@ -11,6 +11,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using ZBar;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CameraApp
 {
@@ -451,12 +452,15 @@ namespace CameraApp
                 WinCall.TraceMessage("***indusCamOper.Play() error");
                 return;
             }
-            int nWaitMS = JobManager.IDLE_WAIT_MS * 2;
+            //int nWaitMS = JobManager.IDLE_WAIT_MS;
+            int nWaitMS = 150;
             while (!stopLiveCamEvent.WaitOne(nWaitMS, true))
             {
                 //live photo
-                using (Bitmap bmCur = indusCamOper.QueryFrame(800))
+                using (Bitmap bmCur = indusCamOper.QueryFrame(400))
                 {
+                    //垂直翻转画面
+                    bmCur.RotateFlip(RotateFlipType.Rotate180FlipY);
                     Bitmap bmDetect = DetectFace(bmCur);
                     mainWin.RefreshLiveCam(bmDetect);
                 }
@@ -475,10 +479,9 @@ namespace CameraApp
             faceCmpEngine.GetLivePhoto(bmCur);
             Bitmap bmDetect = (Bitmap)bmCur.Clone();
             if (faceCmpEngine.DetectLivePhoto())
-            {                
-                Size szPicCtrl = mainWin.GetLivePicCtrl().Size;
-                float fWS = (float)bmCur.Width /(float)szPicCtrl.Width;
-                float fHS = (float)bmCur.Height /(float)szPicCtrl.Height;
+            {
+                float fWS = (float)bmCur.Width /(float)faceCmpEngine.GetLiveDataWidth();
+                float fHS = (float)bmCur.Height /(float)faceCmpEngine.GetLiveDataHeight();
                 var curLiveFace = faceCmpEngine.GetLiveFaceInfo();
                 float rX = curLiveFace.m_FaceRect.left * fWS;
                 float rY = curLiveFace.m_FaceRect.top * fHS;
@@ -530,8 +533,17 @@ namespace CameraApp
             if(bmIDPhoto!= null)
             {
                 bmIDPhoto.Dispose();
+                bmIDPhoto = null;
             }
-            bmIDPhoto = new Bitmap(idCardReader.GetLastIDPhotoFile());
+            string strBmpPath = idCardReader.GetLastIDPhotoFile();
+            try
+            {
+                bmIDPhoto = new Bitmap(strBmpPath);
+            }
+            catch (FileNotFoundException ex)
+            {
+                WinCall.TraceException(ex);
+            }
             return (bmIDPhoto != null);
         }
 
