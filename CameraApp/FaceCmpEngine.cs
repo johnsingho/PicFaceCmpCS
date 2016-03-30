@@ -284,6 +284,7 @@ namespace CameraApp
             HWRESULT iRst = HWDetectFaceKeyPoints(handleLib, idPhotoData.pixel, idPhotoData.width, idPhotoData.height, ref iMaxFace, ref idFaceInfo);
             if (iRst != S_OK)
             {
+                WinCall.TraceMessage("***没找身份证上的人脸");
                 Marshal.FreeHGlobal(pbFtrID);
                 Marshal.FreeHGlobal(pbFtrLiveFace);
                 return 0.0F;
@@ -328,23 +329,11 @@ namespace CameraApp
             {
                 using (Bitmap bmGrapy = BitmapConvetGray(bmTemp))
                 {
-#if OLD_BYTE
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        //bmGrapy.Save(ms, bmGrapy.RawFormat);
-                        bmGrapy.Save(ms, ImageFormat.MemoryBmp);
-                        byte[] byData = ms.GetBuffer();
-                        int nMaxBuf = pPix.width*pPix.height;
-                        Debug.Assert((nMaxBuf >= byData.Length), "灰度缓冲区有问题"); //! todo
-                        Marshal.Copy(byData, 0, pPix.pixel, byData.Length);
-                    }
-#else
                     Rectangle rect = new Rectangle(0,0,nW,nH);
                     BitmapData dataGray = bmGrapy.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
                     System.IntPtr ptrGray = dataGray.Scan0;
                     WinCall.CopyMemory(pPix.pixel, ptrGray, nW*nH);
                     bmGrapy.UnlockBits(dataGray);
-#endif
                 }
             }            
         }
@@ -403,8 +392,8 @@ namespace CameraApp
                         blue = srcP[0];
                         green = srcP[1];
                         red = srcP[2];
-                        //*dstP = (byte)(.299 * red + .587 * green + .114 * blue);
-                        *dstP = (byte)((red*299 + green*587 + blue*114+500)/1000.0);
+                        *dstP = (byte)(.299 * red + .587 * green + .114 * blue);
+                        //*dstP = (byte)((red*299 + green*587 + blue*114+500)/1000.0);
                     }
                     srcP += srcOffset;
                     dstP += dstOffset;

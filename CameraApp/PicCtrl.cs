@@ -6,6 +6,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
+using JohnKit;
 
 namespace CameraApp
 {
@@ -14,7 +15,12 @@ namespace CameraApp
         public PicCtrl()
         {
             InitializeComponent();
+            SetInfoCtrl();
         }
-        
+
+        private void SetInfoCtrl()
+        {
+            this.lblInfo.Visible = false;
+        }
     }
 }

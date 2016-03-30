@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace JohnKit
@@ -25,6 +26,19 @@ namespace JohnKit
         
         [DllImport("Kernel32.dll", EntryPoint = "RtlMoveMemory")]
         public static extern void CopyMemory(IntPtr Destination, IntPtr Source, [MarshalAs(UnmanagedType.U4)] int Length);
+
+        [DllImport("user32.dll")]
+        public static extern int GetWindowLong(IntPtr hwnd, int nIndex);
+        [DllImport("user32.dll")]
+        public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        [DllImport("user32.dll")]
+        public static extern int SetLayeredWindowAttributes(IntPtr Handle, int crKey, byte bAlpha, int dwFlags);
+
+        public static readonly int GWL_EXSTYLE = -20;
+        public static readonly int WS_EX_TRANSPARENT = 0x20;
+        public static readonly int WS_EX_LAYERED = 0x80000;
+        public static readonly int LWA_COLORKEY = 1;
+        public static readonly int LWA_ALPHA = 2;
 
         public static void ZeroArr(byte[] arr)
         {
@@ -54,6 +68,21 @@ namespace JohnKit
         {
             Trace.WriteLine(strMsg);
         }
+
+        //load bitmap from path
+        public static Bitmap LoadBitmap(string path)
+        {
+            Bitmap bm = null;
+            using (var binReader = new System.IO.BinaryReader(System.IO.File.Open(path, System.IO.FileMode.Open)))
+            {
+                var fileInfo = new System.IO.FileInfo(path);
+                byte[] bytes = binReader.ReadBytes((int)fileInfo.Length);
+                binReader.Close();
+                bm = new Bitmap(new System.IO.MemoryStream(bytes));
+            }
+            return bm;
+        }
+
     }
 
 }

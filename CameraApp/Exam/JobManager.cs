@@ -10,13 +10,13 @@ namespace CameraApp.Exam
     {
         //空闲等待时间
         public static readonly int IDLE_WAIT_MS = 200;
-
-        public static readonly HandlerBase sHandlerTest = new EmptyHandler(); //! test
+        
         public static readonly HandlerBase sHandlerException = new HandlerException();
         public static readonly HandlerBase sHandlerReadIDCard = new HandlerReadIDCard();
         public static readonly HandlerBase sHandlerFaceCmp = new HandlerFaceCmp();
         public static readonly HandlerBase sHandlerTicketCheck = new HandlerTicketCheck();
         public static readonly HandlerBase sHandlerOpenGate = new HandlerOpenGate();
+        //public static readonly HandlerBase sHandlerTest = new EmptyHandler(); //! test
 
         #region MainCode
         public void doWork(object pData)

@@ -35,10 +35,13 @@ namespace CameraApp
             this.btnTestExit = new System.Windows.Forms.Button();
             this.idCardGifBox = new CNSpinner.ProgressSpinner();
             this.tickGifBox = new CNSpinner.ProgressSpinner();
+            this.lblTimer = new System.Windows.Forms.Label();
+            this.livePicCtrl = new CameraApp.PicCtrl();
             this.tickPicCtrl = new CameraApp.PicCtrl();
             this.idCardPicCtrl = new CameraApp.PicCtrl();
-            this.livePicCtrl = new CameraApp.PicCtrl();
-            this.lblTimer = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.livePicCtrl)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tickPicCtrl)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.idCardPicCtrl)).BeginInit();
             this.SuspendLayout();
             // 
             // lblInfo
@@ -81,32 +84,6 @@ namespace CameraApp
             this.tickGifBox.Size = new System.Drawing.Size(260, 195);
             this.tickGifBox.TabIndex = 3;
             // 
-            // tickPicCtrl
-            // 
-            this.tickPicCtrl.BackColor = System.Drawing.SystemColors.ScrollBar;
-            this.tickPicCtrl.Location = new System.Drawing.Point(732, 481);
-            this.tickPicCtrl.Name = "tickPicCtrl";
-            this.tickPicCtrl.Size = new System.Drawing.Size(260, 195);
-            this.tickPicCtrl.TabIndex = 0;
-            this.tickPicCtrl.Visible = false;
-            // 
-            // idCardPicCtrl
-            // 
-            this.idCardPicCtrl.BackColor = System.Drawing.SystemColors.ScrollBar;
-            this.idCardPicCtrl.Location = new System.Drawing.Point(67, 477);
-            this.idCardPicCtrl.Name = "idCardPicCtrl";
-            this.idCardPicCtrl.Size = new System.Drawing.Size(235, 167);
-            this.idCardPicCtrl.TabIndex = 4;
-            this.idCardPicCtrl.Visible = false;
-            // 
-            // livePicCtrl
-            // 
-            this.livePicCtrl.BackColor = System.Drawing.SystemColors.ScrollBar;
-            this.livePicCtrl.Location = new System.Drawing.Point(306, 88);
-            this.livePicCtrl.Name = "livePicCtrl";
-            this.livePicCtrl.Size = new System.Drawing.Size(420, 335);
-            this.livePicCtrl.TabIndex = 6;
-            // 
             // lblTimer
             // 
             this.lblTimer.BackColor = System.Drawing.Color.Transparent;
@@ -118,11 +95,46 @@ namespace CameraApp
             this.lblTimer.TabIndex = 7;
             this.lblTimer.Text = "2016年3月20日 星期日 09:40:40";
             // 
+            // livePicCtrl
+            // 
+            this.livePicCtrl.BackColor = System.Drawing.Color.Black;
+            this.livePicCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.livePicCtrl.Location = new System.Drawing.Point(305, 85);
+            this.livePicCtrl.Name = "livePicCtrl";
+            this.livePicCtrl.Size = new System.Drawing.Size(422, 338);
+            this.livePicCtrl.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.livePicCtrl.TabIndex = 6;
+            this.livePicCtrl.TabStop = false;
+            // 
+            // tickPicCtrl
+            // 
+            this.tickPicCtrl.BackColor = System.Drawing.Color.Black;
+            this.tickPicCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.tickPicCtrl.Location = new System.Drawing.Point(732, 481);
+            this.tickPicCtrl.Name = "tickPicCtrl";
+            this.tickPicCtrl.Size = new System.Drawing.Size(260, 195);
+            this.tickPicCtrl.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.tickPicCtrl.TabIndex = 0;
+            this.tickPicCtrl.TabStop = false;
+            this.tickPicCtrl.Visible = false;
+            // 
+            // idCardPicCtrl
+            // 
+            this.idCardPicCtrl.BackColor = System.Drawing.Color.Black;
+            this.idCardPicCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.idCardPicCtrl.Location = new System.Drawing.Point(67, 477);
+            this.idCardPicCtrl.Name = "idCardPicCtrl";
+            this.idCardPicCtrl.Size = new System.Drawing.Size(235, 167);
+            this.idCardPicCtrl.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.idCardPicCtrl.TabIndex = 4;
+            this.idCardPicCtrl.TabStop = false;
+            this.idCardPicCtrl.Visible = false;
+            // 
             // MainWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.DimGray;
+            this.BackColor = System.Drawing.Color.Gray;
             this.BackgroundImage = global::CameraApp.Properties.Resources.bg;
             this.ClientSize = new System.Drawing.Size(1024, 768);
             this.ControlBox = false;
@@ -143,7 +155,11 @@ namespace CameraApp
             this.Text = "MainWin";
             this.TopMost = true;
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
+            this.Load += new System.EventHandler(this.OnFormLoad);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDown);
+            ((System.ComponentModel.ISupportInitialize)(this.livePicCtrl)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.tickPicCtrl)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.idCardPicCtrl)).EndInit();
             this.ResumeLayout(false);
 
         }

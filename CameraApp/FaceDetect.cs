@@ -183,9 +183,7 @@ namespace CameraApp
             thGateBoard.Join();
 
             if (thDataIDCard.bResult && thDataFaceCmp.bResult && thDataInitCam.bResult && thDataGateBoard.bResult)
-            {
-                string str = string.Format("欢迎使用{0}", ConstValue.DEF_SYS_NAME);
-                PromptInfo(str);
+            {   
                 StartMainThread();
                 StartLiveCamThread();
                 PlayVoice(ConstValue.VOICE_INIT_OK);
@@ -338,12 +336,6 @@ namespace CameraApp
 
         public void Dispose()
         {
-            StopMainThread();
-            WaitForMainThreadStop();
-
-            StopLiveCamThread();
-            WaitForLiveCamThreadStop();
-
             idCardReader.Dispose();
             faceCmpEngine.Dispose();
 
@@ -358,7 +350,16 @@ namespace CameraApp
                 bmLivePhoto = null;
             }
         }
-        
+
+        //清退工作
+        public void DoExit()
+        {
+            StopMainThread();
+            WaitForMainThreadStop();
+
+            StopLiveCamThread();
+            WaitForLiveCamThreadStop();
+        }
 
         public int GetCamTicketID()
         {
@@ -396,7 +397,7 @@ namespace CameraApp
             {
                 thMainThread.Join();
                 thMainThread = null;
-                
+
                 stopMainEvent.Close();
                 stopMainEvent = null;
             }
@@ -413,6 +414,7 @@ namespace CameraApp
             {
                 jm.doWork(this);
             }
+            WinCall.TraceMessage("***FuncMainFaceCmpThread exit");
         }
         #endregion
 
@@ -438,7 +440,7 @@ namespace CameraApp
         {
             if (thLiveCamThread != null)
             {
-                thLiveCamThread.Join();
+                thLiveCamThread.Join(1500); //!
                 thLiveCamThread = null;
 
                 stopLiveCamEvent.Close();
@@ -462,10 +464,15 @@ namespace CameraApp
                     //垂直翻转画面
                     bmCur.RotateFlip(RotateFlipType.Rotate180FlipY);
                     Bitmap bmDetect = DetectFace(bmCur);
+                    if (stopLiveCamEvent.WaitOne(nWaitMS/2, true))
+                    {
+                        break;
+                    }
                     mainWin.RefreshLiveCam(bmDetect);
                 }
             }
             indusCamOper.Stop();
+            WinCall.TraceMessage("***liveCamThread exit");
         }
 
         /// <summary>
@@ -490,7 +497,10 @@ namespace CameraApp
                 //如果找到人脸的话，画个框
                 using (Graphics g = Graphics.FromImage(bmDetect))
                 {
-                    g.DrawRectangle(new Pen(Color.Red, 2), rX, rY, rW, rH);
+                    using (var pen = new Pen(Color.Red, 2))
+                    {
+                        g.DrawRectangle(pen, rX, rY, rW, rH);
+                    }
                 }
             }
             return bmDetect;
@@ -536,15 +546,13 @@ namespace CameraApp
                 bmIDPhoto = null;
             }
             string strBmpPath = idCardReader.GetLastIDPhotoFile();
-            try
+            bmIDPhoto = WinCall.LoadBitmap(strBmpPath);
+            bool bOk = (bmIDPhoto != null);
+            if (bOk)
             {
-                bmIDPhoto = new Bitmap(strBmpPath);
+                faceCmpEngine.GetIDPhoto(bmIDPhoto);
             }
-            catch (FileNotFoundException ex)
-            {
-                WinCall.TraceException(ex);
-            }
-            return (bmIDPhoto != null);
+            return bOk;
         }
 
         public Bitmap GetIDPhoto()
@@ -594,7 +602,7 @@ namespace CameraApp
         {
             float fScmp = 0.0F;
             //两个图片的比对。 并且保存特征.            
-            fScmp = faceCmpEngine.CompareAFace(configInfo.InitFaceCmpRate, 0);
+            fScmp = faceCmpEngine.CompareAFace(configInfo.InitFaceCmpRate/1000.0F, 0);
             fScmp = fScmp * 100.0F;
 
 #if FACE_ZUOBI

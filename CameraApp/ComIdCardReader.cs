@@ -298,7 +298,7 @@ namespace CameraApp
         public int ReadCard()
         {   
             ResetData();
-            //comPort.DiscardInBuffer(); //!
+            //comPort.DiscardInBuffer();
 
             int nRet = SAM_FindCard();
             if (nRet != 0)
@@ -384,7 +384,7 @@ namespace CameraApp
 
         
         [DllImport("WltRS.dll", EntryPoint = "GetBmp", CharSet = CharSet.Ansi)]
-        public static extern int GetBmp([MarshalAs(UnmanagedType.LPStr)]string wltfile, 
+        public static extern int GetBmp([MarshalAs(UnmanagedType.LPStr)]string wltfile,
                                         [MarshalAs(UnmanagedType.U4)] int intf);
 
 
@@ -393,7 +393,8 @@ namespace CameraApp
         // 0或负数失败
         int wlt2bmp(string filename)
         {
-            int ret = GetBmp(filename, 2);
+            int ret = 0;
+            ret=GetBmp(filename, 2);
             PrintGetBmpError(ret);
             return ret;
         }
@@ -418,6 +419,7 @@ namespace CameraApp
 
             Directory.CreateDirectory(sOutFile);
             sOutFile = Path.Combine(sOutFile, strRela);
+            //File.Delete(sOutFile);
 
             byte[] pbyPhoto = GetPhoto();
             bool bRet = false;
@@ -429,7 +431,11 @@ namespace CameraApp
             if (bRet)
             {
                 bRet = (1==wlt2bmp(sOutFile));
-                strLastIDPhotoFile = bRet ? sOutFile : string.Empty;
+                strLastIDPhotoFile = string.Empty;
+                if (bRet)
+                {
+                    strLastIDPhotoFile = sOutFile.Replace(".wlt", ".bmp");
+                }
             }
             return bRet;
         }

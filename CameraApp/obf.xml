@@ -2,6 +2,7 @@
 <Obfuscator>
   <Var name="InPath" value=".\bin\Release" />
   <Var name="OutPath" value=".\publish" />
+  <Var name="KeepPublicApi" value="false" />
   <Var name="HidePrivateApi" value="true" />
   <Var name="KeyFile" value=".\CameraApp.snk" />
 

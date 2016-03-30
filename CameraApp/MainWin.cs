@@ -24,15 +24,15 @@ namespace CameraApp
         public MainWin()
         {
             InitializeComponent();            
-            InitVars();
-            LoadConfigInfo();
-            InitEnv();
-            InitClock();
-
 #if !DEBUG
             //仅用于调试
             btnTestExit.Visible = false;
-#endif
+#endif      
+        }
+
+        private void OnFormLoad(object sender, EventArgs e)
+        {
+            DoInitStart();
         }
 
         private void InitClock()
@@ -58,14 +58,11 @@ namespace CameraApp
 
         private void OnMouseDown(object sender, MouseEventArgs e)
         {
-            //只有调试的时候才允许拖动
-#if DEBUG
             if (e.Button == MouseButtons.Left)
             {
                 WinCall.ReleaseCapture();
                 WinCall.SendMessage(Handle, WinCall.WM_NCLBUTTONDOWN, WinCall.HT_CAPTION, 0);
             }
-#endif
         }
 
         private bool LoadConfigInfo()
@@ -80,9 +77,18 @@ namespace CameraApp
             return false;
         }
 
+        private void DoInitStart()
+        {
+            InitVars();
+            LoadConfigInfo();
+            InitEnv();
+            InitClock();
+        }
+        
         private void OnFormClosed(object sender, FormClosedEventArgs e)
         {
             timerRefreshClock.Stop();
+            faceDetect.DoExit();
             faceDetect.Dispose();
         }
 
@@ -158,6 +164,8 @@ namespace CameraApp
         {
             this.idCardGifBox.Show();
             this.idCardPicCtrl.Hide();
+            string str = string.Format("欢迎使用\n{0}", ConstValue.DEF_SYS_NAME);
+            PromptInfo(str);
         }
         public void ResetIDCardInfo()
         {
@@ -167,19 +175,20 @@ namespace CameraApp
         private void DoShowIDCardInfo(object objData)
         {
             IDBaseTextDecoder idTextDecoder = (IDBaseTextDecoder)objData;
-            this.idCardGifBox.Hide();
-            this.idCardPicCtrl.Show();
-
+            
             Font fontPrompt = new Font("微软雅黑", 10);
             Brush brushPrompt = new SolidBrush(Color.Blue);
             Brush brushValue = new SolidBrush(Color.Black);
             Rectangle rectPrompt = new Rectangle(5, 5, 100, 40);
             Rectangle rectText = Rectangle.Inflate(rectPrompt,0, 0);
-            const int nXoff = 50;
-            const int nYoff = 45;
+            const int nXoff = 60;
+            const int nYoff = 15;
             const int nIDPicHei = 126;
             const int nIDPicWid = 102;
             rectText.Offset(nXoff, 0);
+
+            this.idCardGifBox.Hide();
+            this.idCardPicCtrl.Show();
 
             using (Graphics g = this.idCardPicCtrl.CreateGraphics())
             {
@@ -254,5 +263,7 @@ namespace CameraApp
         {
             return livePicCtrl;
         }
+
+        
     }
 }
