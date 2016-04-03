@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 
 namespace CameraApp
 {
@@ -36,12 +37,12 @@ namespace CameraApp
             this.idCardGifBox = new CNSpinner.ProgressSpinner();
             this.tickGifBox = new CNSpinner.ProgressSpinner();
             this.lblTimer = new System.Windows.Forms.Label();
-            this.livePicCtrl = new CameraApp.PicCtrl();
-            this.tickPicCtrl = new CameraApp.PicCtrl();
-            this.idCardPicCtrl = new CameraApp.PicCtrl();
+            this.livePicCtrl = new System.Windows.Forms.PictureBox();
+            this.tickPicCtrl = new System.Windows.Forms.PictureBox();
+            this.idCardPicCtrl = new CameraApp.IDCardPicCtrl();
+            this.lblTestInfo = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.livePicCtrl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tickPicCtrl)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.idCardPicCtrl)).BeginInit();
             this.SuspendLayout();
             // 
             // lblInfo
@@ -121,14 +122,25 @@ namespace CameraApp
             // idCardPicCtrl
             // 
             this.idCardPicCtrl.BackColor = System.Drawing.Color.Black;
-            this.idCardPicCtrl.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.idCardPicCtrl.Location = new System.Drawing.Point(67, 477);
+            this.idCardPicCtrl.BackPic = global::CameraApp.Properties.Resources.IDCardBack;
+            this.idCardPicCtrl.Location = new System.Drawing.Point(34, 477);
             this.idCardPicCtrl.Name = "idCardPicCtrl";
-            this.idCardPicCtrl.Size = new System.Drawing.Size(235, 167);
-            this.idCardPicCtrl.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.idCardPicCtrl.Size = new System.Drawing.Size(268, 167);
             this.idCardPicCtrl.TabIndex = 4;
             this.idCardPicCtrl.TabStop = false;
             this.idCardPicCtrl.Visible = false;
+            // 
+            // lblTestInfo
+            // 
+            this.lblTestInfo.AutoSize = true;
+            this.lblTestInfo.BackColor = System.Drawing.Color.Transparent;
+            this.lblTestInfo.Font = new System.Drawing.Font("Microsoft YaHei", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.lblTestInfo.ForeColor = System.Drawing.Color.Yellow;
+            this.lblTestInfo.Location = new System.Drawing.Point(312, 13);
+            this.lblTestInfo.Name = "lblTestInfo";
+            this.lblTestInfo.Size = new System.Drawing.Size(79, 20);
+            this.lblTestInfo.TabIndex = 8;
+            this.lblTestInfo.Text = "V2.0测试版";
             // 
             // MainWin
             // 
@@ -138,6 +150,7 @@ namespace CameraApp
             this.BackgroundImage = global::CameraApp.Properties.Resources.bg;
             this.ClientSize = new System.Drawing.Size(1024, 768);
             this.ControlBox = false;
+            this.Controls.Add(this.lblTestInfo);
             this.Controls.Add(this.lblTimer);
             this.Controls.Add(this.livePicCtrl);
             this.Controls.Add(this.btnTestExit);
@@ -159,8 +172,8 @@ namespace CameraApp
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OnMouseDown);
             ((System.ComponentModel.ISupportInitialize)(this.livePicCtrl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tickPicCtrl)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.idCardPicCtrl)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -168,12 +181,13 @@ namespace CameraApp
         
         private System.Windows.Forms.Label lblInfo;
         private System.Windows.Forms.Button btnTestExit;
-        private PicCtrl tickPicCtrl;
+        private PictureBox tickPicCtrl;
         private CNSpinner.ProgressSpinner tickGifBox;
-        private PicCtrl idCardPicCtrl;
+        private IDCardPicCtrl idCardPicCtrl;
         private CNSpinner.ProgressSpinner idCardGifBox;
-        private PicCtrl livePicCtrl;
+        private PictureBox livePicCtrl;
         private System.Windows.Forms.Label lblTimer;
+        private Label lblTestInfo;
     }
 }
 

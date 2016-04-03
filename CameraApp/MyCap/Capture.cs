@@ -112,8 +112,9 @@ namespace CameraApp.MyCap
                     throw new Exception("Timeout waiting to get picture");
                 }
             }
-            catch
+            catch(Exception e)
             {
+                WinCall.TraceException(e);
                 Marshal.FreeCoTaskMem(m_ipBuffer);
                 m_ipBuffer = IntPtr.Zero;
                 throw;

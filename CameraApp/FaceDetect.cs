@@ -12,6 +12,7 @@ using System.Drawing.Imaging;
 using ZBar;
 using System.Collections.Generic;
 using System.IO;
+using ZBar = ZBar.ZBar;
 
 namespace CameraApp
 {
@@ -42,7 +43,6 @@ namespace CameraApp
         private GateBoardOper gateBoardOper = new GateBoardOper();
         private FaceCmpEngine faceCmpEngine = new FaceCmpEngine();
         private MindVisionCamOper indusCamOper = new MindVisionCamOper();
-        private Capture tickCamOper = null;
 
         private ManualResetEvent stopMainEvent = null;
         private Thread thMainThread=null;
@@ -129,18 +129,11 @@ namespace CameraApp
             thDevInit.Start();
         }
 
-        /// <summary>
-        /// 线程返回值
-        /// </summary>
-        private class ThreadBoolRet
-        {
-            public bool bResult = false;
-        }
-
+        
         private void FuncInitEnv()
         {
             //初始化身份证读取模块
-            ThreadBoolRet thDataIDCard = new ThreadBoolRet();
+            WinCall.ThreadBoolRet thDataIDCard = new WinCall.ThreadBoolRet();
             Thread thIDCard = new Thread(TryInitIDCardReader)
             {
                 Name = "thIDCard",
@@ -149,7 +142,7 @@ namespace CameraApp
             thIDCard.Start(thDataIDCard);
 
             //初始化人脸识别库
-            ThreadBoolRet thDataFaceCmp = new ThreadBoolRet();
+            WinCall.ThreadBoolRet thDataFaceCmp = new WinCall.ThreadBoolRet();
             Thread thFaceCmp = new Thread(TryInitFaceCmp)
             {
                 Name = "thFaceCmp",
@@ -158,7 +151,7 @@ namespace CameraApp
             thFaceCmp.Start(thDataFaceCmp);
 
             //初始化两个摄像头
-            ThreadBoolRet thDataInitCam = new ThreadBoolRet();
+            WinCall.ThreadBoolRet thDataInitCam = new WinCall.ThreadBoolRet();
             Thread thInitCam = new Thread(TryInitCameras)
             {
                 Name = "thInitCam",
@@ -167,7 +160,7 @@ namespace CameraApp
             thInitCam.Start(thDataInitCam);
 
             //初始化灯板、闸门
-            ThreadBoolRet thDataGateBoard = new ThreadBoolRet();
+            WinCall.ThreadBoolRet thDataGateBoard = new WinCall.ThreadBoolRet();
             Thread thGateBoard = new Thread(TryInitGateBoard)
             {
                 Name = "thGateBoard",
@@ -249,7 +242,7 @@ namespace CameraApp
 
         private void TryInitIDCardReader(object o)
         {
-            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            WinCall.ThreadBoolRet thRet = (WinCall.ThreadBoolRet)o;
             bool bOpen = (1==idCardReader.TryOpenCOM(this.configInfo.IDReaderCOM));
             if (bOpen)
             {
@@ -286,7 +279,7 @@ namespace CameraApp
 
         private void TryInitGateBoard(object o)
         {
-            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            WinCall.ThreadBoolRet thRet = (WinCall.ThreadBoolRet)o;
             bool bOpen = gateBoardOper.TryOpenCOM(configInfo.GateBoardCOM);
             if (bOpen)
             {
@@ -297,9 +290,12 @@ namespace CameraApp
 
         private void TryInitCameras(object o)
         {
-            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            WinCall.ThreadBoolRet thRet = (WinCall.ThreadBoolRet)o;
+
+            WinCall.ThreadBoolRet thRetTick = new WinCall.ThreadBoolRet();
+            thRetTick.pExtra = this;
             //(1)车票摄像头初始化
-            mainWin.CreateTicketCamOper(this);
+            mainWin.CreateTicketCamOper(thRetTick);
 
             //(2)人脸摄像头初始化
             bool bCamFace = indusCamOper.Init();
@@ -325,7 +321,7 @@ namespace CameraApp
         /// <returns></returns>
         private void TryInitFaceCmp(object o)
         {
-            ThreadBoolRet thRet = (ThreadBoolRet)o;
+            WinCall.ThreadBoolRet thRet = (WinCall.ThreadBoolRet)o;
             bool bRet = faceCmpEngine.InitLib();
             if (!bRet)
             {
@@ -335,7 +331,7 @@ namespace CameraApp
         }
 
         public void Dispose()
-        {
+        {   
             idCardReader.Dispose();
             faceCmpEngine.Dispose();
 
@@ -365,11 +361,7 @@ namespace CameraApp
         {
             return configInfo.CamTicketID;
         }
-
-        public void SetTickCamOper(Capture tickCamOper)
-        {
-            this.tickCamOper = tickCamOper;
-        }
+        
 
         #region MainThread        
         private void StartMainThread()
@@ -440,7 +432,7 @@ namespace CameraApp
         {
             if (thLiveCamThread != null)
             {
-                thLiveCamThread.Join(1500); //!
+                thLiveCamThread.Join();
                 thLiveCamThread = null;
 
                 stopLiveCamEvent.Close();
@@ -612,7 +604,7 @@ namespace CameraApp
                 fScmp += 9.5786;
             }
 #endif
-            string strScore = string.Format("人脸识别相似度：{0:F3}%", fScmp);
+            string strScore = string.Format("人脸识别相似度：{0:F2}%", fScmp);
             WinCall.TraceMessage(strScore);
             PromptInfo(strScore);
 
@@ -620,24 +612,32 @@ namespace CameraApp
             return (fScmp >= configInfo.ReqFaceCmpScore);
         }
 
+        public class DataTickCam
+        {
+            public Bitmap bm;
+        }
+
         //识别二维码
         public bool DoCheckTicket(ref string strQrCode)
-        {            
-            IntPtr bmData = tickCamOper.Click();
-            if (bmData == IntPtr.Zero)
+        {
+            DataTickCam data = new DataTickCam();
+            if (!mainWin.CapTicket(data))
             {
                 return false;
             }
-            strQrCode = string.Empty;
-            using (Bitmap b = new Bitmap(tickCamOper.Width, tickCamOper.Height, tickCamOper.Stride, PixelFormat.Format24bppRgb, bmData))
-            {
-                using (Bitmap bmGray = FaceCmpEngine.BitmapConvetGray(b))
-                {
-                    ImageScanner scanner = new ImageScanner();
-                    scanner.SetConfiguration(SymbolType.None, Config.Enable, 1);
 
+            strQrCode = string.Empty;
+            using (Bitmap bmGray = FaceCmpEngine.BitmapConvetGray(data.bm))
+            {
+                //垂直翻转
+                bmGray.RotateFlip(RotateFlipType.Rotate90FlipX);
+                using (ImageScanner scanner = new ImageScanner())
+                {
+                    scanner.SetConfiguration(SymbolType.None, Config.Enable, 1);
                     List<Symbol> symbols = scanner.Scan(bmGray);
-                    foreach(var sym in symbols)
+                    WinCall.TraceMessage(string.Format("***Ticket syms={0}", symbols.Count)); //! for test
+
+                    foreach (var sym in symbols)
                     {
                         var symType = sym.GetType();
                         if (!string.IsNullOrEmpty(sym.Data))
@@ -648,6 +648,7 @@ namespace CameraApp
                     }
                 }
             }
+            data.bm.Dispose();
             return (false == string.IsNullOrEmpty(strQrCode));
         }
 
@@ -657,6 +658,21 @@ namespace CameraApp
             gateBoardOper.OpenGate(1);
             PlayVoice(ConstValue.VOICE_PASS);
             PromptInfo("验证成功。\n祝你旅途愉快！");
+        }
+
+        public void SwitchTicketCam(bool bShow)
+        {
+            if (bShow)
+            {
+                this.PromptInfo("请将车票平放在验票口!");
+                this.PlayVoice(ConstValue.VOICE_PLACE_TIC);
+                this.FlashAndLight(0);
+            }
+            else
+            {
+                this.SwitchLight(0, false);
+            }
+            mainWin.ShowTicketCam(bShow);
         }
     }
 }

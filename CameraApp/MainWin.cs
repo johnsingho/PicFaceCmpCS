@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,16 +19,20 @@ namespace CameraApp
         private static readonly Color DefPromptClr = Color.Blue;
         private Timer timerRefreshClock;
 
-        delegate void SetInfoTextCallback(string text, int nFontHeight);
+        //用来访问车票摄像头
+        private Capture tickCamOper;
+
+        delegate void SetInfoTextCallback(string text, Color clrText, int nFontHeight);
 
 
         public MainWin()
         {
-            InitializeComponent();            
+            InitializeComponent();
 #if !DEBUG
-            //仅用于调试
+    //仅用于调试
             btnTestExit.Visible = false;
-#endif      
+            lblTestInfo.Visible = false;
+#endif
         }
 
         private void OnFormLoad(object sender, EventArgs e)
@@ -39,7 +44,7 @@ namespace CameraApp
         {
             timerRefreshClock = new Timer();
             timerRefreshClock.Tick += new EventHandler(TimerRefreshClock);
-            
+
             timerRefreshClock.Interval = 1000;
             timerRefreshClock.Start();
         }
@@ -66,7 +71,7 @@ namespace CameraApp
         }
 
         private bool LoadConfigInfo()
-        {            
+        {
             return faceDetect.LoadConfigInfo();
         }
 
@@ -84,9 +89,14 @@ namespace CameraApp
             InitEnv();
             InitClock();
         }
-        
+
         private void OnFormClosed(object sender, FormClosedEventArgs e)
         {
+            if (tickCamOper != null)
+            {
+                tickCamOper.Dispose();
+            }
+
             timerRefreshClock.Stop();
             faceDetect.DoExit();
             faceDetect.Dispose();
@@ -96,20 +106,22 @@ namespace CameraApp
         /// 信息提示
         /// </summary>
         /// <param name="strInfo"></param>
-        public void PromptInfo(string strInfo, int nFontHeight=18)
+        public void PromptInfo(string strInfo, int nFontHeight = 18)
         {
             PromptInfo(strInfo, DefPromptClr, nFontHeight);
         }
+
         public void PromptError(string strErr, int nFontHeight = 18)
         {
             PromptInfo(strErr, Color.Red, nFontHeight);
         }
-        public void PromptInfo(string strInfo, Color clrText, int nFontHeight=18)
+
+        public void PromptInfo(string strInfo, Color clrText, int nFontHeight = 18)
         {
             if (this.lblInfo.InvokeRequired)
             {
                 SetInfoTextCallback d = new SetInfoTextCallback(PromptInfo);
-                this.Invoke(d, new object[]{ strInfo, nFontHeight });
+                this.Invoke(d, new object[] {strInfo, clrText, nFontHeight});
             }
             else
             {
@@ -128,33 +140,39 @@ namespace CameraApp
 
         //通用单参数Delegate
         delegate void MyFuncDelegate1(object objData);
+
         private void DoCreateTicketCamOper(object objData)
         {
-            FaceDetect faceDetect = (FaceDetect) objData;
+            WinCall.ThreadBoolRet pData = (WinCall.ThreadBoolRet) objData;
+            FaceDetect faceDetect = (FaceDetect) pData.pExtra;
             const int VIDEOWIDTH = 640;
             const int VIDEOHEIGHT = 480;
             const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
-            Capture tickCamOper = null;
+
             try
             {
-                tickCamOper = new Capture(faceDetect.GetCamTicketID(), VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, tickPicCtrl);
+                tickCamOper = new Capture(faceDetect.GetCamTicketID(), VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL,
+                    tickPicCtrl);
             }
             catch (Exception ex)
             {
                 WinCall.TraceException(ex);
             }
-            if (tickCamOper == null)
+            bool bInit = (tickCamOper != null);
+            if (!bInit)
             {
-                PromptInfo("车票摄像头初始化失败！", Color.Red);
+                PromptError("车票摄像头初始化失败！");
             }
-            faceDetect.SetTickCamOper(tickCamOper);
+            pData.bResult = bInit;
         }
 
 
-        public void CreateTicketCamOper(FaceDetect faceDetect)
+        public void CreateTicketCamOper(WinCall.ThreadBoolRet pData)
         {
-            while (!this.InvokeRequired) {}
-            this.Invoke(new MyFuncDelegate1(DoCreateTicketCamOper), faceDetect);
+            while (!this.InvokeRequired)
+            {
+            }
+            this.Invoke(new MyFuncDelegate1(DoCreateTicketCamOper), pData);
         }
 
         //通用无参数delegate
@@ -167,6 +185,7 @@ namespace CameraApp
             string str = string.Format("欢迎使用\n{0}", ConstValue.DEF_SYS_NAME);
             PromptInfo(str);
         }
+
         public void ResetIDCardInfo()
         {
             this.Invoke(new MyFuncDelegate(_ResetIDCardInfo));
@@ -174,68 +193,12 @@ namespace CameraApp
 
         private void DoShowIDCardInfo(object objData)
         {
-            IDBaseTextDecoder idTextDecoder = (IDBaseTextDecoder)objData;
-            
-            Font fontPrompt = new Font("微软雅黑", 10);
-            Brush brushPrompt = new SolidBrush(Color.Blue);
-            Brush brushValue = new SolidBrush(Color.Black);
-            Rectangle rectPrompt = new Rectangle(5, 5, 100, 40);
-            Rectangle rectText = Rectangle.Inflate(rectPrompt,0, 0);
-            const int nXoff = 60;
-            const int nYoff = 15;
-            const int nIDPicHei = 126;
-            const int nIDPicWid = 102;
-            rectText.Offset(nXoff, 0);
-
+            IDBaseTextDecoder idTextDecoder = (IDBaseTextDecoder) objData;
             this.idCardGifBox.Hide();
             this.idCardPicCtrl.Show();
 
-            using (Graphics g = this.idCardPicCtrl.CreateGraphics())
-            {
-                g.DrawImage(global::CameraApp.Properties.Resources.IDCardBack,
-                    new Rectangle(0, 0, idCardPicCtrl.Width, idCardPicCtrl.Height));
-
-                DrawOffset(g, "姓名：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-                DrawOffset(g, idTextDecoder.m_strName, fontPrompt, brushValue, ref rectText, nYoff);
-                DrawOffset(g, "性别：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-                DrawOffset(g, idTextDecoder.m_strSex, fontPrompt, brushValue, ref rectText, nYoff);
-                DrawOffset(g, "身份证号：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-                DrawOffset(g, MaskID(idTextDecoder.m_strID), fontPrompt, brushValue, ref rectText, nYoff);
-
-                string strExpr = string.Format("{0} - {1}", idTextDecoder.m_strExpireBegin, idTextDecoder.m_strExpireEnd);
-                DrawOffset(g, "有效期限：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-                DrawOffset(g, strExpr, fontPrompt, brushValue, ref rectText, nYoff);
-                                
-                faceDetect.LoadIDPhoto();
-                //画身份证照
-                DrawIDPic(g, faceDetect.GetIDPhoto(), idCardPicCtrl.Width-nIDPicWid, 5, nIDPicWid, nIDPicHei);
-            }
-
-            fontPrompt.Dispose();
-            brushPrompt.Dispose();
-            brushValue.Dispose();
-        }
-
-        private static void DrawIDPic(Graphics g, Bitmap bitmap, int x, int y, int nIDPicWid, int nIDPicHei)
-        {
-            if (bitmap == null) { return; }
-            g.DrawImage(bitmap, new Rectangle(x, y, nIDPicWid, nIDPicHei));
-        }
-
-        private static string MaskID(string m_strID)
-        {
-            StringBuilder sb = new StringBuilder(m_strID);
-            for (int i = 0; i < 4; i++)
-            {
-                sb[i + 10] = '*';
-            }            
-            return sb.ToString(0, sb.Length);
-        }
-
-        private static void DrawOffset(Graphics g, string str, Font font, Brush clrBrush, ref Rectangle rectPrompt, int nYoff)
-        {
-            g.DrawString(str, font, clrBrush, rectPrompt);
-            rectPrompt.Offset(0, nYoff);
+            faceDetect.LoadIDPhoto(); //load id photo
+            this.idCardPicCtrl.DrawIDInfo(idTextDecoder, faceDetect.GetIDPhoto());
         }
 
         public void ShowIDCardInfo(IDBaseTextDecoder idTextDecoder)
@@ -243,10 +206,14 @@ namespace CameraApp
             this.Invoke(new MyFuncDelegate1(DoShowIDCardInfo), idTextDecoder);
         }
 
-        private void DoRefreshLiveCam(object objData)
+        private void DoRefreshLiveCam(object sender, DoWorkEventArgs e)
         {
-            Bitmap bmLive = (Bitmap)objData;
-            if (bmLive == null) { return; }
+            //Bitmap bmLive = (Bitmap)objData;
+            Bitmap bmLive = (Bitmap) e.Argument;
+            if (bmLive == null)
+            {
+                return;
+            }
             var rect = this.livePicCtrl.ClientRectangle;
             using (Graphics g = this.livePicCtrl.CreateGraphics())
             {
@@ -254,9 +221,13 @@ namespace CameraApp
             }
             bmLive.Dispose();
         }
+
         public void RefreshLiveCam(Bitmap bitmap)
         {
-            this.Invoke(new MyFuncDelegate1(DoRefreshLiveCam), bitmap);
+            //this.Invoke(new MyFuncDelegate1(DoRefreshLiveCam), bitmap);
+            var worker = new BackgroundWorker();
+            worker.DoWork += new DoWorkEventHandler(DoRefreshLiveCam);
+            worker.RunWorkerAsync(bitmap);
         }
 
         public Control GetLivePicCtrl()
@@ -264,6 +235,34 @@ namespace CameraApp
             return livePicCtrl;
         }
 
-        
+        private void DoShowTicketCam(object obj)
+        {
+            bool bShow = (bool) obj;
+            tickGifBox.Visible = !bShow;
+            tickPicCtrl.Visible = bShow;
+        }
+
+        public void ShowTicketCam(bool bShow)
+        {
+            this.Invoke(new MyFuncDelegate1(DoShowTicketCam), bShow);
+        }
+
+        private void DoCapTicket(object obj)
+        {
+            FaceDetect.DataTickCam data = (FaceDetect.DataTickCam) obj;
+            IntPtr bmData = tickCamOper.Click();
+            if (bmData == IntPtr.Zero)
+            {
+                return;
+            }
+            Bitmap b = new Bitmap(tickCamOper.Width, tickCamOper.Height, tickCamOper.Stride,
+                                   PixelFormat.Format24bppRgb, bmData);
+            data.bm = b;
+        }
+        public bool CapTicket(FaceDetect.DataTickCam data)
+        {
+            this.Invoke(new MyFuncDelegate1(DoCapTicket), data);
+            return (data.bm != null);
+        }
     }
 }

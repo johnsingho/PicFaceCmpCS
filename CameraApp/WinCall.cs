@@ -9,7 +9,7 @@ namespace JohnKit
     /// H.Z.XIN 2016-03-08 
     /// normal windows api
     /// </summary>
-    class WinCall
+    public class WinCall
     {
         public static readonly int VK_LBUTTON = 0x01;
 
@@ -83,6 +83,14 @@ namespace JohnKit
             return bm;
         }
 
+        /// <summary>
+        /// 线程返回值
+        /// </summary>
+        public class ThreadBoolRet
+        {
+            public bool bResult = false;
+            public object pExtra = null;
+        }
     }
 
 }

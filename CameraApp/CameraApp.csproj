@@ -25,8 +25,9 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <ApplicationVersion>2.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -65,6 +66,24 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>CameraApp.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>CEB54AA1E69845E3F4273311DC71C75B03588203</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>CameraApp_TemporaryKey.pfx</ManifestKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="CNSpinner, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="DirectShowLib-2005, Version=2.1.0.0, Culture=neutral, PublicKeyToken=67e7b740cdfc2d3f, processorArchitecture=MSIL">
@@ -74,17 +93,19 @@
     <Reference Include="libzbar-cil">
       <HintPath>References\libzbar-cil.dll</HintPath>
     </Reference>
+    <Reference Include="SqliteCli, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>References\SqliteCli.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComIdCardReader.cs" />
@@ -112,11 +133,11 @@
     <Compile Include="MyCap\Capture.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PicCtrl.cs">
-      <SubType>Component</SubType>
+    <Compile Include="IDCardPicCtrl.cs">
+      <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="PicCtrl.Designer.cs">
-      <DependentUpon>PicCtrl.cs</DependentUpon>
+    <Compile Include="IDCardPicCtrl.Designer.cs">
+      <DependentUpon>IDCardPicCtrl.cs</DependentUpon>
     </Compile>
     <Compile Include="WinCall.cs" />
     <EmbeddedResource Include="MainWin.resx">
@@ -133,10 +154,12 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="PicCtrl.resx">
-      <DependentUpon>PicCtrl.cs</DependentUpon>
+    <EmbeddedResource Include="IDCardPicCtrl.resx">
+      <DependentUpon>IDCardPicCtrl.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="CameraApp.snk" />
+    <None Include="CameraApp_TemporaryKey.pfx" />
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -7,10 +7,8 @@ namespace CameraApp.Exam
         public override void Do(object pData)
         {
             FaceDetect detector = (FaceDetect)pData;
-            detector.PromptInfo("请将车票平放在验票口!");
-            detector.PlayVoice(ConstValue.VOICE_PLACE_TIC);
-            detector.FlashAndLight(0);
-
+            detector.SwitchTicketCam(true);
+            
             bool bCmp = false;
             string strQrCode="";
             for (int i=0; i<detector.GetMaxTicketChkTimes(); i++)
@@ -19,8 +17,8 @@ namespace CameraApp.Exam
                 if (bCmp) { break; }
                 JobManager.Sleep(JobManager.IDLE_WAIT_MS * 3);
             }
-            detector.SwitchLight(0, false);
-
+            detector.SwitchTicketCam(false);
+            
             if (bCmp)
             {
                 string str = string.Format("二维码内容: {0}", strQrCode);
