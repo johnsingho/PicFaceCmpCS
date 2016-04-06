@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
 namespace JohnKit
@@ -81,6 +83,94 @@ namespace JohnKit
                 bm = new Bitmap(new System.IO.MemoryStream(bytes));
             }
             return bm;
+        }
+
+
+        #region convert to gray
+        private static Bitmap CreateGrayscaleImage(int width, int height)
+        {
+            // create new image
+            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+            // set palette to grayscale
+            SetGrayscalePalette(bmp);
+            // return new image
+            return bmp;
+
+        }//#
+        private static void SetGrayscalePalette(Bitmap srcImg)
+        {
+            if (srcImg.PixelFormat != PixelFormat.Format8bppIndexed)
+                throw new ArgumentException();
+            ColorPalette cp = srcImg.Palette;
+            for (int i = 0; i < 256; i++)
+            {
+                cp.Entries[i] = Color.FromArgb(i, i, i);
+            }
+            srcImg.Palette = cp;
+        }
+
+        internal static Bitmap BitmapConvetGray(Bitmap srcBitmap)
+        {
+            int width = srcBitmap.Width;
+            int height = srcBitmap.Height;
+            Rectangle rect = new Rectangle(0, 0, width, height);
+
+            BitmapData srcBmData = srcBitmap.LockBits(rect,
+                      ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+
+            Bitmap dstBitmap = CreateGrayscaleImage(width, height);
+            BitmapData dstBmData = dstBitmap.LockBits(rect,
+                      ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
+
+            System.IntPtr srcScan = srcBmData.Scan0;
+            System.IntPtr dstScan = dstBmData.Scan0;
+
+            unsafe
+            {
+                byte* srcP = (byte*)srcScan.ToPointer();
+                byte* dstP = (byte*)dstScan.ToPointer();
+                int srcOffset = srcBmData.Stride - width * 3;
+                int dstOffset = dstBmData.Stride - width;
+
+                byte red, green, blue;
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++, srcP += 3, dstP++)
+                    {
+                        blue = srcP[0];
+                        green = srcP[1];
+                        red = srcP[2];
+                        *dstP = (byte)(.299 * red + .587 * green + .114 * blue);
+                        //*dstP = (byte)((red*299 + green*587 + blue*114+500)/1000.0);
+                    }
+                    srcP += srcOffset;
+                    dstP += dstOffset;
+                }
+            }
+
+            srcBitmap.UnlockBits(srcBmData);
+            dstBitmap.UnlockBits(dstBmData);
+            return dstBitmap;
+        }
+        #endregion
+
+        internal static Bitmap BitmapScale(Bitmap img, int wid, int hei)
+        {
+            if (img == null)
+            {
+                return null;
+            }
+            Bitmap tarBitmap = new Bitmap(wid, hei);
+            using (Graphics bmpGraphics = Graphics.FromImage(tarBitmap))
+            {
+                // set Drawing Quality
+                bmpGraphics.InterpolationMode = InterpolationMode.High;
+                bmpGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                Rectangle compressionRectangle = new Rectangle(0, 0, wid, hei);
+                bmpGraphics.DrawImage(img, compressionRectangle);
+            }
+            return tarBitmap;
         }
 
         /// <summary>

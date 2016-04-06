@@ -30,7 +30,7 @@ namespace CameraApp
             comPort.StopBits = StopBits.One;
             comPort.Handshake = Handshake.None; //!
             comPort.Parity = Parity.None;
-            
+           
             comPort.ReadTimeout = 1000;
             comPort.WriteTimeout = 1000;
         }
@@ -38,6 +38,7 @@ namespace CameraApp
         public void Dispose()
         {
             comPort.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace CameraApp
 
         //设置COM口波特率
         //默认是115200
-        int SetBaudRate(int nBaud)
+        internal int SetBaudRate(int nBaud)
         {
             byte sw1, sw2, sw3;
             int ret;
@@ -391,7 +392,7 @@ namespace CameraApp
         //wlt file  ----> bmp file
         // 1成功
         // 0或负数失败
-        int wlt2bmp(string filename)
+        static int wlt2bmp(string filename)
         {
             int ret = 0;
             ret=GetBmp(filename, 2);

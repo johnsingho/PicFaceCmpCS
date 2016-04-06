@@ -27,7 +27,7 @@ namespace CameraApp.Exam
 
             detector.SwitchLight(2, false);
             detector.SwitchLight(3, false);
-            //pDlg->KeepCompareInfo(fScore);
+            detector.KeepCompareInfo(fScore);
 
             if (bCmp)
             {
@@ -41,7 +41,7 @@ namespace CameraApp.Exam
                 GetMgr().disPatch(JobManager.sHandlerException, pData);
             }
 
-            //WriteFaceCmpLog(pData, fScore);
+            detector.WriteFaceCmpLog(fScore);
         }
     }
 }

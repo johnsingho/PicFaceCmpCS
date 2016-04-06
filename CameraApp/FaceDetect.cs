@@ -12,6 +12,7 @@ using System.Drawing.Imaging;
 using ZBar;
 using System.Collections.Generic;
 using System.IO;
+using CameraApp.DbLog;
 using ZBar = ZBar.ZBar;
 
 namespace CameraApp
@@ -67,9 +68,8 @@ namespace CameraApp
         #region 操作相关
         //身份证照片
         private Bitmap bmIDPhoto = null;
-        //现场照片
-        private Bitmap bmLivePhoto = null;
-        
+        private LogDb logdb = new LogDb();
+
         #endregion
 
 
@@ -334,16 +334,11 @@ namespace CameraApp
         {   
             idCardReader.Dispose();
             faceCmpEngine.Dispose();
-
+            logdb.Dispose();
             if (bmIDPhoto != null)
             {
                 bmIDPhoto.Dispose();
                 bmIDPhoto = null;
-            }
-            if (bmLivePhoto != null)
-            {
-                bmLivePhoto.Dispose();
-                bmLivePhoto = null;
             }
         }
 
@@ -451,17 +446,19 @@ namespace CameraApp
             while (!stopLiveCamEvent.WaitOne(nWaitMS, true))
             {
                 //live photo
-                using (Bitmap bmCur = indusCamOper.QueryFrame(400))
+                Bitmap bmCur = indusCamOper.QueryFrame(400);
+                if (bmCur == null)
                 {
-                    //垂直翻转画面
-                    bmCur.RotateFlip(RotateFlipType.Rotate180FlipY);
-                    Bitmap bmDetect = DetectFace(bmCur);
-                    if (stopLiveCamEvent.WaitOne(nWaitMS/2, true))
-                    {
-                        break;
-                    }
-                    mainWin.RefreshLiveCam(bmDetect);
+                    continue;
                 }
+                //垂直翻转画面
+                bmCur.RotateFlip(RotateFlipType.Rotate180FlipY);
+                Bitmap bmDetect = DetectFace(bmCur);
+                if (stopLiveCamEvent.WaitOne(nWaitMS / 2, true))
+                {
+                    break;
+                }
+                mainWin.RefreshLiveCam(bmDetect);
             }
             indusCamOper.Stop();
             WinCall.TraceMessage("***liveCamThread exit");
@@ -471,21 +468,21 @@ namespace CameraApp
         /// 使用汉王库来侦测人脸
         /// 返回画上了框的照片
         /// </summary>
-        /// <param name="bmCur"></param>
+        /// <param name="bmCur">当前的现场照片</param>
         /// <returns></returns>
         private Bitmap DetectFace(Bitmap bmCur)
         {
             faceCmpEngine.GetLivePhoto(bmCur);
             Bitmap bmDetect = (Bitmap)bmCur.Clone();
             if (faceCmpEngine.DetectLivePhoto())
-            {
-                float fWS = (float)bmCur.Width /(float)faceCmpEngine.GetLiveDataWidth();
-                float fHS = (float)bmCur.Height /(float)faceCmpEngine.GetLiveDataHeight();
+            {   
+                float fWS = (float) bmCur.Width/(float) faceCmpEngine.GetLiveDataWidth();
+                float fHS = (float) bmCur.Height/(float) faceCmpEngine.GetLiveDataHeight();
                 var curLiveFace = faceCmpEngine.GetLiveFaceInfo();
-                float rX = curLiveFace.m_FaceRect.left * fWS;
-                float rY = curLiveFace.m_FaceRect.top * fHS;
-                float rW = (curLiveFace.m_FaceRect.right - curLiveFace.m_FaceRect.left) * fWS;
-                float rH = (curLiveFace.m_FaceRect.bottom - curLiveFace.m_FaceRect.top) * fHS;
+                float rX = curLiveFace.m_FaceRect.left*fWS;
+                float rY = curLiveFace.m_FaceRect.top*fHS;
+                float rW = (curLiveFace.m_FaceRect.right - curLiveFace.m_FaceRect.left)*fWS;
+                float rH = (curLiveFace.m_FaceRect.bottom - curLiveFace.m_FaceRect.top)*fHS;
                 //如果找到人脸的话，画个框
                 using (Graphics g = Graphics.FromImage(bmDetect))
                 {
@@ -627,7 +624,7 @@ namespace CameraApp
             }
 
             strQrCode = string.Empty;
-            using (Bitmap bmGray = FaceCmpEngine.BitmapConvetGray(data.bm))
+            using (Bitmap bmGray = WinCall.BitmapConvetGray(data.bm))
             {
                 //垂直翻转
                 bmGray.RotateFlip(RotateFlipType.Rotate90FlipX);
@@ -673,6 +670,33 @@ namespace CameraApp
                 this.SwitchLight(0, false);
             }
             mainWin.ShowTicketCam(bShow);
+        }
+
+        /// <summary>
+        /// 保存身份证照片和现场照片，留底
+        /// </summary>
+        /// <param name="fScore"></param>
+        public void KeepCompareInfo(float fScore)
+        {
+#if KEEP_PIC_LOG
+            if (!logdb.TryOpen())
+            {
+                WinCall.TraceMessage("***KeepCompareInfo创建数据库失败！");
+                return;
+            }
+            logdb.InsertRec(idTextDecoder.m_strName, idTextDecoder.m_strID, fScore, bmIDPhoto, faceCmpEngine.GetStoreLivePic());
+#endif
+        }
+
+        /// <summary>
+        /// 调试版用，写日志文本文件
+        /// </summary>
+        /// <param name="fScore"></param>
+        public void WriteFaceCmpLog(float fScore)
+        {
+#if DEBUG
+
+#endif
         }
     }
 }

@@ -13,18 +13,19 @@ namespace CameraApp
     public partial class IDCardPicCtrl : UserControl
     {
         private Bitmap bmBack;
-        private int nX,nY,nW,nH;
+        //private int nX, nY;
+        private int nW,nH;
         private IDBaseTextDecoder idTextDecoder;
         private Bitmap bmIDPhoto;
         private readonly Font fontPrompt = new Font("微软雅黑", 10);
+        private readonly Font fontIDNum  = new Font("Arial Black", 12);
         private readonly Brush brushPrompt = new SolidBrush(Color.Blue);
         private readonly Brush brushValue = new SolidBrush(Color.Black);
 
         public IDCardPicCtrl()
         {
             InitializeComponent();
-            nX = 0;
-            nY = 0;
+
             nW = this.Width;
             nH = this.Height;
 
@@ -66,33 +67,38 @@ namespace CameraApp
         {
             //base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            DoDrawIDInfo(e.Graphics);
+            if (idTextDecoder != null)
+            {
+                DoDrawIDInfo(e.Graphics);
+            }
         }
 
         private void DoDrawIDInfo(Graphics g)
         {
-            Rectangle rectPrompt = new Rectangle(5, 5, 100, 40);
-            Rectangle rectText = Rectangle.Inflate(rectPrompt, 0, 0);
-            const int nXoff = 60;
-            const int nYoff = 15;
+            Rectangle rectPrompt = new Rectangle(1, 20, 100, 30);
+            Rectangle rectText = Rectangle.Inflate(rectPrompt, 50, 0);
+            const int nXoff = 66;
+            const int nYoff = 30;
+            const int nYoffMin = 17;
             const int nIDPicHei = 126;
             const int nIDPicWid = 102;
-            rectText.Offset(nXoff, 0);
-            
+            rectText.Offset(50+nXoff, 0);
+
             DrawOffset(g, "姓名：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
             DrawOffset(g, idTextDecoder.m_strName, fontPrompt, brushValue, ref rectText, nYoff);
             DrawOffset(g, "性别：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
             DrawOffset(g, idTextDecoder.m_strSex, fontPrompt, brushValue, ref rectText, nYoff);
-            DrawOffset(g, "身份证号：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-            DrawOffset(g, MaskID(idTextDecoder.m_strID), fontPrompt, brushValue, ref rectText, nYoff);
 
-            string strExpr = String.Format("{0} - {1}", idTextDecoder.m_strExpireBegin, idTextDecoder.m_strExpireEnd);
-            DrawOffset(g, "有效期限：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
-            DrawOffset(g, strExpr, fontPrompt, brushValue, ref rectText, nYoff);
+            DrawOffset(g, "有效期限：", fontPrompt, brushPrompt, ref rectPrompt, nYoffMin);
+            DrawOffset(g, idTextDecoder.m_strExpireBegin, fontPrompt, brushValue, ref rectText, nYoffMin);
+            DrawOffset(g, "         ", fontPrompt, brushPrompt, ref rectPrompt, nYoff + 5);
+            DrawOffset(g, idTextDecoder.m_strExpireEnd, fontPrompt, brushValue, ref rectText, nYoff + 5);
+            DrawOffset(g, "身份证号：", fontPrompt, brushPrompt, ref rectPrompt, nYoff);
+            DrawOffset(g, MaskID(idTextDecoder.m_strID), fontIDNum, brushValue, ref rectText, nYoff);
 
             if (bmIDPhoto != null)
             {
-                g.DrawImage(bmIDPhoto, new Rectangle(nW - nIDPicWid, 5, nIDPicWid, nIDPicHei));
+                g.DrawImage(bmIDPhoto, new Rectangle(nW - nIDPicWid-2, 4, nIDPicWid, nIDPicHei));
             }
         }
 

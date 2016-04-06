@@ -194,11 +194,15 @@ namespace CameraApp
         private HW_HANDLE handleLib=IntPtr.Zero;
         private PicPixel idPhotoData;
         private PicPixel livePhotoData;
-        
+        private Bitmap bmLivePhoto;     /*当前摄像头的现场画面*/
+        private Bitmap bmFaceLivePhoto; /*当前用作人脸对比的现场画面*/
+        private Object lockLivePhoto = new object();
+
         //当前现场照片人脸
         private HWFaceInfo curLiveFaceInfo;
         //提取到人脸样本
         private HWFaceInfo[] detectFaceInfos = new HWFaceInfo[MAX_DETECT_FACES];
+        
 
         public bool InitLib()
         {
@@ -234,6 +238,8 @@ namespace CameraApp
             {
                 PicPixel.DeletePicPixel(ref livePhotoData);
             }
+            ClearPhoto(ref bmLivePhoto);
+            ClearPhoto(ref bmFaceLivePhoto);
         }
 
         //像素数据
@@ -297,7 +303,13 @@ namespace CameraApp
             }
 
             //找出现场照片上的人脸
-            if (S_OK != HWExtractFeature(handleLib, livePhotoData.pixel, livePhotoData.width, livePhotoData.height, ref curLiveFaceInfo, pbFtrLiveFace))
+            var hr = S_FAIL;
+            lock (lockLivePhoto)
+            {
+                hr = HWExtractFeature(handleLib, livePhotoData.pixel, livePhotoData.width, livePhotoData.height, ref curLiveFaceInfo, pbFtrLiveFace);
+                StoreLivePhoto();
+            }
+            if (S_OK != hr)
             {
                 Marshal.FreeHGlobal(pbFtrID);
                 Marshal.FreeHGlobal(pbFtrLiveFace);
@@ -314,7 +326,11 @@ namespace CameraApp
 
         internal void GetLivePhoto(Bitmap bmCur)
         {
-            GetGrayPixel(livePhotoData, bmCur);
+            lock (lockLivePhoto)
+            {
+                GetGrayPixel(livePhotoData, bmCur);
+                KeepLivePhoto(bmCur);
+            }
         }
         internal void GetIDPhoto(Bitmap bmID)
         {
@@ -325,9 +341,9 @@ namespace CameraApp
         {
             int nW = pPix.width;
             int nH = pPix.height;
-            using (Bitmap bmTemp = BitmapScale(bmCur, nW, nH))
+            using (Bitmap bmTemp = WinCall.BitmapScale(bmCur, nW, nH))
             {
-                using (Bitmap bmGrapy = BitmapConvetGray(bmTemp))
+                using (Bitmap bmGrapy = WinCall.BitmapConvetGray(bmTemp))
                 {
                     Rectangle rect = new Rectangle(0,0,nW,nH);
                     BitmapData dataGray = bmGrapy.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
@@ -338,92 +354,6 @@ namespace CameraApp
             }            
         }
 
-        #region convert to gray
-        private static Bitmap CreateGrayscaleImage(int width, int height)
-        {
-            // create new image
-            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
-            // set palette to grayscale
-            SetGrayscalePalette(bmp);
-            // return new image
-            return bmp;
-
-        }//#
-        private static void SetGrayscalePalette(Bitmap srcImg)
-        {
-            if (srcImg.PixelFormat != PixelFormat.Format8bppIndexed)
-                throw new ArgumentException();
-            ColorPalette cp = srcImg.Palette;
-            for (int i = 0; i < 256; i++)
-            {
-                cp.Entries[i] = Color.FromArgb(i, i, i);
-            }
-            srcImg.Palette = cp;
-        }
-
-        public static Bitmap BitmapConvetGray(Bitmap srcBitmap)
-        {
-            int width = srcBitmap.Width;
-            int height = srcBitmap.Height;
-            Rectangle rect = new Rectangle(0, 0, width, height);
-
-            BitmapData srcBmData = srcBitmap.LockBits(rect,
-                      ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-
-            Bitmap dstBitmap = CreateGrayscaleImage(width, height);
-            BitmapData dstBmData = dstBitmap.LockBits(rect,
-                      ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
-
-            System.IntPtr srcScan = srcBmData.Scan0;
-            System.IntPtr dstScan = dstBmData.Scan0;
-
-            unsafe
-            {
-                byte* srcP = (byte*)srcScan.ToPointer();
-                byte* dstP = (byte*)dstScan.ToPointer();
-                int srcOffset = srcBmData.Stride - width * 3;
-                int dstOffset = dstBmData.Stride - width;
-
-                byte red, green, blue;
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < width; x++, srcP += 3, dstP++)
-                    {
-                        blue = srcP[0];
-                        green = srcP[1];
-                        red = srcP[2];
-                        *dstP = (byte)(.299 * red + .587 * green + .114 * blue);
-                        //*dstP = (byte)((red*299 + green*587 + blue*114+500)/1000.0);
-                    }
-                    srcP += srcOffset;
-                    dstP += dstOffset;
-                }
-            }
-
-            srcBitmap.UnlockBits(srcBmData);
-            dstBitmap.UnlockBits(dstBmData);
-            return dstBitmap;
-        }
-        #endregion
-
-        private static Bitmap BitmapScale(Bitmap img, int wid, int hei)
-        {
-            if (img == null)
-            {
-                return null;
-            }
-            Bitmap tarBitmap = new Bitmap(wid, hei);
-            using (Graphics bmpGraphics = Graphics.FromImage(tarBitmap))
-            {
-                // set Drawing Quality
-                bmpGraphics.InterpolationMode = InterpolationMode.High;
-                bmpGraphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                Rectangle compressionRectangle = new Rectangle(0, 0, wid, hei);
-                bmpGraphics.DrawImage(img, compressionRectangle);
-            }
-            return tarBitmap;
-        }
 
         internal bool DetectLivePhoto()
         {
@@ -475,5 +405,33 @@ namespace CameraApp
         {
             return livePhotoData.height;
         }
+
+        private void KeepLivePhoto(Bitmap bmLive)
+        {
+            ClearPhoto(ref bmLivePhoto);
+            bmLivePhoto = bmLive;
+        }
+
+        //保留用于写文件的现场照片
+        private void StoreLivePhoto()
+        {
+            ClearPhoto(ref bmFaceLivePhoto);
+            bmFaceLivePhoto = bmLivePhoto;
+            bmLivePhoto = null;
+        }
+        internal Bitmap GetStoreLivePic()
+        {
+            return bmFaceLivePhoto;
+        }
+        private void ClearPhoto(ref Bitmap bm)
+        {
+            if (bm != null)
+            {
+                bm.Dispose();
+                bm = null;
+            }
+        }
+
+        
     }
 }
