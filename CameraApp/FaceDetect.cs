@@ -1,19 +1,13 @@
 ﻿using System;
-using System.Collections.Specialized;
 using System.Configuration;
-using System.Diagnostics;
 using System.Threading;
 using CameraApp.Exam;
-using CameraApp.MyCap;
 using JohnKit;
 using System.Media;
 using System.Drawing;
-using System.Drawing.Imaging;
 using ZBar;
 using System.Collections.Generic;
-using System.IO;
 using CameraApp.DbLog;
-using ZBar = ZBar.ZBar;
 
 namespace CameraApp
 {
@@ -179,11 +173,11 @@ namespace CameraApp
             {   
                 StartMainThread();
                 StartLiveCamThread();
-                PlayVoice(ConstValue.VOICE_INIT_OK);
+                PlayVoice(ConstValue.VOICE_INIT_OK, true);
             }
             else
             {
-                PlayVoice(ConstValue.VOICE_INIT_FAIL);
+                PlayVoice(ConstValue.VOICE_INIT_FAIL, true);
             }
         }
         
@@ -206,7 +200,7 @@ namespace CameraApp
             voicePlaceTic.Load();
         }
 
-        public void PlayVoice(string strVoice)
+        public void PlayVoice(string strVoice, bool bFast=false)
         {
             SoundPlayer player = null;
             switch (strVoice)
@@ -236,7 +230,14 @@ namespace CameraApp
             }
             if (player!=null)
             {
-                player.Play();
+                if (bFast)
+                {
+                    player.Play();
+                }
+                else
+                {
+                    player.PlaySync();
+                }
             }
         }
 
@@ -653,23 +654,23 @@ namespace CameraApp
         public void LetGo()
         {
             gateBoardOper.OpenGate(1);
-            PlayVoice(ConstValue.VOICE_PASS);
             PromptInfo("验证成功。\n祝你旅途愉快！");
+            PlayVoice(ConstValue.VOICE_PASS, true);
         }
 
         public void SwitchTicketCam(bool bShow)
         {
+            mainWin.ShowTicketCam(bShow);
             if (bShow)
             {
                 this.PromptInfo("请将车票平放在验票口!");
-                this.PlayVoice(ConstValue.VOICE_PLACE_TIC);
                 this.FlashAndLight(0);
+                this.PlayVoice(ConstValue.VOICE_PLACE_TIC);
             }
             else
             {
                 this.SwitchLight(0, false);
             }
-            mainWin.ShowTicketCam(bShow);
         }
 
         /// <summary>

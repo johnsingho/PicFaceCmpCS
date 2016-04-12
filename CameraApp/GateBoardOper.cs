@@ -8,7 +8,7 @@ namespace CameraApp
     /// <summary>
     /// 灯板，闸门控制
     /// </summary>
-    public class GateBoardOper
+    internal class GateBoardOper
     {
         #region Command
         private static readonly ushort MAX_CMDLEN = 64;
@@ -40,11 +40,11 @@ namespace CameraApp
         private int mRecvlen=0;
         private byte[] mRecvbuf = new byte[MAX_CMDLEN];
 
-        public GateBoardOper()
+        internal GateBoardOper()
         {
         }
 
-        public bool TryOpenCOM(int gateBoardCom)
+        internal bool TryOpenCOM(int gateBoardCom)
         {
             comPort.BaudRate = 9600;
             comPort.DataBits = 8;
@@ -231,7 +231,7 @@ namespace CameraApp
             CMDDATA_GATEON2
         };
 
-        public bool SwitchLight(int iLight, bool bOpen)
+        internal bool SwitchLight(int iLight, bool bOpen)
         {
             bool bOk = false;
             int nMax = g_ArrLightCmdOpen.Length;
@@ -247,7 +247,7 @@ namespace CameraApp
             return bOk;
         }
 
-        public bool TurnoffAllLight()
+        internal bool TurnoffAllLight()
         {
             foreach (ushort cmd in g_ArrLightCmdClose)
             {
@@ -258,7 +258,7 @@ namespace CameraApp
 
         // iGate=0右闸门
         // iGate=1左闸门
-        public bool OpenGate(int iGate)
+        internal bool OpenGate(int iGate)
         {
             bool bOk = false;
             int nMax = g_ArrGeteOpen.Length;

@@ -1,7 +1,5 @@
 using System.Runtime.InteropServices;
 using System;
-using System.IO;
-using System.Net;
 using System.Windows.Forms;
 
 namespace CameraApp
@@ -11,9 +9,7 @@ namespace CameraApp
     using JohnKit;
     using System.Drawing;
     using System.Drawing.Imaging;
-    using System.Drawing.Drawing2D;
-    using System.Diagnostics;
-    
+
     /// <summary>
     /// 使用汉王人脸识别库
     /// </summary>
@@ -272,7 +268,7 @@ namespace CameraApp
         }
 
         //进行一对一对比
-        public float CompareAFace(float fInitFaceCmpRate, int iPorttrail)
+        internal float CompareAFace(float fInitFaceCmpRate, int iPorttrail)
         {
             float fScore = fInitFaceCmpRate;
             int iFtrSize = 0;

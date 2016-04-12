@@ -42,7 +42,7 @@ namespace JohnKit
         public static readonly int LWA_COLORKEY = 1;
         public static readonly int LWA_ALPHA = 2;
 
-        public static void ZeroArr(byte[] arr)
+        internal static void ZeroArr(byte[] arr)
         {
             for (int i = 0; i < arr.Length; i++)
             {
@@ -50,7 +50,7 @@ namespace JohnKit
             }
         }
 
-        public static void CopyArr(byte[] dstArr, int iDstStart, byte[] srcArr, int iSrcStart, int n)
+        internal static void CopyArr(byte[] dstArr, int iDstStart, byte[] srcArr, int iSrcStart, int n)
         {
             for (int i = 0; i < n; i++)
             {
@@ -58,21 +58,21 @@ namespace JohnKit
             }
         }
 
-        public static void TraceException(Exception exception)
+        internal static void TraceException(Exception exception)
         {
             Trace.WriteLine("***Exception: " + exception.Message);
         }
-        public static void TraceException(string sText,Exception exception)
+        internal static void TraceException(string sText,Exception exception)
         {
             Trace.WriteLine(sText +" ,Exception:"+ exception.Message);
         }
-        public static void TraceMessage(string strMsg)
+        internal static void TraceMessage(string strMsg)
         {
             Trace.WriteLine(strMsg);
         }
 
         //load bitmap from path
-        public static Bitmap LoadBitmap(string path)
+        internal static Bitmap LoadBitmap(string path)
         {
             Bitmap bm = null;
             using (var binReader = new System.IO.BinaryReader(System.IO.File.Open(path, System.IO.FileMode.Open)))

@@ -38,6 +38,7 @@ namespace CameraApp
         private void OnFormLoad(object sender, EventArgs e)
         {
             DoInitStart();
+            Cursor.Hide();
         }
 
         private void InitClock()
@@ -67,6 +68,7 @@ namespace CameraApp
             {
                 WinCall.ReleaseCapture();
                 WinCall.SendMessage(Handle, WinCall.WM_NCLBUTTONDOWN, WinCall.HT_CAPTION, 0);
+                Cursor.Show();//显示鼠标指针
             }
         }
 

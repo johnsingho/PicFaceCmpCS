@@ -48,11 +48,11 @@ namespace CameraApp
             // lblInfo
             // 
             this.lblInfo.BackColor = System.Drawing.Color.Transparent;
-            this.lblInfo.Font = new System.Drawing.Font("Microsoft YaHei", 16F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.lblInfo.Font = new System.Drawing.Font("Microsoft YaHei", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.lblInfo.ForeColor = System.Drawing.Color.MediumBlue;
-            this.lblInfo.Location = new System.Drawing.Point(345, 493);
+            this.lblInfo.Location = new System.Drawing.Point(344, 490);
             this.lblInfo.Name = "lblInfo";
-            this.lblInfo.Size = new System.Drawing.Size(339, 190);
+            this.lblInfo.Size = new System.Drawing.Size(341, 194);
             this.lblInfo.TabIndex = 1;
             this.lblInfo.Text = "Initi初始化....";
             this.lblInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -123,9 +123,9 @@ namespace CameraApp
             // 
             this.idCardPicCtrl.BackColor = System.Drawing.Color.Black;
             this.idCardPicCtrl.BackPic = global::CameraApp.Properties.Resources.IDCardBack;
-            this.idCardPicCtrl.Location = new System.Drawing.Point(34, 477);
+            this.idCardPicCtrl.Location = new System.Drawing.Point(20, 477);
             this.idCardPicCtrl.Name = "idCardPicCtrl";
-            this.idCardPicCtrl.Size = new System.Drawing.Size(268, 167);
+            this.idCardPicCtrl.Size = new System.Drawing.Size(288, 167);
             this.idCardPicCtrl.TabIndex = 4;
             this.idCardPicCtrl.TabStop = false;
             this.idCardPicCtrl.Visible = false;

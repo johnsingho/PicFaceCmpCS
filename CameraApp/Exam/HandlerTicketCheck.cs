@@ -15,7 +15,7 @@ namespace CameraApp.Exam
             {
                 bCmp = detector.DoCheckTicket(ref strQrCode);
                 if (bCmp) { break; }
-                JobManager.Sleep(JobManager.IDLE_WAIT_MS * 3);
+                JobManager.Sleep(JobManager.IDLE_WAIT_MS * 2);
             }
             detector.SwitchTicketCam(false);
             
@@ -28,7 +28,7 @@ namespace CameraApp.Exam
             }
             else {
                 detector.PromptError("车票验证不通过！\n请走人工验票通道。");
-                detector.PlayVoice(ConstValue.VOICE_FAIL_TICKCHK);
+                detector.PlayVoice(ConstValue.VOICE_FAIL_TICKCHK, true);
                 GetMgr().disPatch(JobManager.sHandlerException, pData);
             }
         }

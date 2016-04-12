@@ -1,0 +1,10 @@
+<?xml version='1.0'?>
+<Obfuscator>
+  <Var name="InPath" value=".\bin\Debug" />
+  <Var name="OutPath" value=".\publish" />
+  <Var name="KeepPublicApi" value="true" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="KeyFile" value=".\CameraApp.snk" />
+
+  <Module file="$(InPath)\CameraApp.exe" />
+</Obfuscator>

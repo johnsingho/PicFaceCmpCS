@@ -10,7 +10,7 @@ using JohnKit;
 namespace CameraApp.MyCap
 {
     /// <summary> Summary description for MainForm. </summary>
-    public class Capture : ISampleGrabberCB, IDisposable
+    internal class Capture : ISampleGrabberCB, IDisposable
     {
         #region Member variables
 

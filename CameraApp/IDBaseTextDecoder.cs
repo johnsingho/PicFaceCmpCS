@@ -172,7 +172,7 @@ namespace CameraApp
                 case 98: return "外国血统";
                 default: return "其他";
             }
-            return "其他";
+            //return "其他";
         }
         
     }

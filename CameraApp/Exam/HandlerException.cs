@@ -10,7 +10,7 @@ namespace CameraApp.Exam
     {
         public override void Do(object pData)
         {
-            JobManager.Sleep(1500);
+            JobManager.Sleep((int) (3.5*1000)); //3.5s
             GetMgr().disPatch(JobManager.sHandlerReadIDCard, pData);
         }
     }

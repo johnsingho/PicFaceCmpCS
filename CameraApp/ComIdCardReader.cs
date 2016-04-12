@@ -37,6 +37,7 @@ namespace CameraApp
 
         public void Dispose()
         {
+            DeleteLastIDPhoto();
             comPort.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -344,8 +345,6 @@ namespace CameraApp
             strLastIDPhotoFile = string.Empty;
         }
 
-
-
         private static void PrintGetBmpError(int nRet)
         {
             string strRet = "ok";
@@ -420,8 +419,7 @@ namespace CameraApp
 
             Directory.CreateDirectory(sOutFile);
             sOutFile = Path.Combine(sOutFile, strRela);
-            //File.Delete(sOutFile);
-
+            
             byte[] pbyPhoto = GetPhoto();
             bool bRet = false;
             using (FileStream fileStream = File.Create(sOutFile))
@@ -432,13 +430,22 @@ namespace CameraApp
             if (bRet)
             {
                 bRet = (1==wlt2bmp(sOutFile));
-                strLastIDPhotoFile = string.Empty;
+                DeleteLastIDPhoto();
                 if (bRet)
                 {
                     strLastIDPhotoFile = sOutFile.Replace(".wlt", ".bmp");
                 }
             }
             return bRet;
+        }
+
+        private void DeleteLastIDPhoto()
+        {
+            if (!string.IsNullOrEmpty(strLastIDPhotoFile))
+            {
+                File.Delete(strLastIDPhotoFile);
+            }
+            strLastIDPhotoFile = string.Empty;
         }
 
         //获取最后一次成功解码的身份证照片路径
